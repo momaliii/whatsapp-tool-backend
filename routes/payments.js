@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const User = require('../models/User');
+const Payment = require('../models/Payment');
 const router = express.Router();
 
 // In production, use process.env for these keys!
@@ -31,20 +32,33 @@ router.post('/create-payment', async (req, res) => {
       }
     );
 
-    res.json({ success: true, payment_url: response.data.data.url });
+    // Save payment record (pending)
+    await Payment.create({
+      userId,
+      amount,
+      status: 'pending',
+      invoiceId: response.data.data.invoice_id,
+      paymentUrl: response.data.data.url,
+      createdAt: new Date()
+    });
+
+    res.json({ success: true, payment_url: response.data.data.url, invoice_id: response.data.data.invoice_id });
   } catch (error) {
     console.error('Fawaterak error:', error.response?.data || error.message);
     res.status(500).json({ success: false, error: 'Failed to create payment link' });
   }
 });
 
-// Fawaterak webhook to auto-credit points after payment
+// Payment webhook
 router.post('/webhook', async (req, res) => {
-  const { status, metadata, amount_paid } = req.body;
+  const { status, metadata, amount_paid, invoice_id } = req.body;
+
+  if (invoice_id) {
+    await Payment.findOneAndUpdate({ invoiceId: invoice_id }, { status, amountPaid: amount_paid, updatedAt: new Date() });
+  }
 
   if (status === 'paid' && metadata && metadata.userId) {
     try {
-      // Example: 1 EGP = 1 point (customize as needed)
       await User.findByIdAndUpdate(metadata.userId, { $inc: { points: amount_paid } });
       console.log(`User ${metadata.userId} paid ${amount_paid} EGP. Credited points.`);
     } catch (err) {
@@ -53,6 +67,16 @@ router.post('/webhook', async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// Get payment history for a user
+router.get('/history/:userId', async (req, res) => {
+  try {
+    const payments = await Payment.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, payments });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch payment history' });
+  }
 });
 
 module.exports = router; 
