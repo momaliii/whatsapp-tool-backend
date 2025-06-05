@@ -172,14 +172,13 @@ router.post('/deduct', authenticate, async (req, res) => {
 });
 
 // Get points packages (for purchase)
-router.get('/packages', authenticate, async (req, res) => {
+router.get('/packages', async (req, res) => {
   const packages = [
     { id: 'pack_500', points: 500, price: 5, currency: 'USD' },
     { id: 'pack_1000', points: 1000, price: 15, currency: 'USD', popular: true },
     { id: 'pack_2500', points: 2500, price: 30, currency: 'USD' },
     { id: 'pack_5000', points: 5000, price: 50, currency: 'USD' },
   ];
-  
   res.json({ success: true, packages });
 });
 

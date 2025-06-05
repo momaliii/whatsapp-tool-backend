@@ -10,7 +10,7 @@ const FAWATERAK_PROVIDER_KEY = 'FAWATERAK.22161';
 
 // Create a Fawaterak payment link (invoice)
 router.post('/create-payment', async (req, res) => {
-  const { amount, userId, userEmail } = req.body;
+  const { amount, userId, userEmail, method } = req.body;
 
   try {
     const response = await axios.post(
@@ -23,7 +23,8 @@ router.post('/create-payment', async (req, res) => {
         },
         provider_key: FAWATERAK_PROVIDER_KEY,
         callback_url: 'https://whatsapp-tool-backend.onrender.com/api/payments/webhook',
-        metadata: { userId }
+        metadata: { userId },
+        payment_method: method
       },
       {
         headers: {
@@ -77,6 +78,17 @@ router.get('/history/:userId', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch payment history' });
   }
+});
+
+// Get points packages (for purchase)
+router.get('/packages', async (req, res) => {
+  const packages = [
+    { id: 'pack_500', points: 500, price: 5, currency: 'USD' },
+    { id: 'pack_1000', points: 1000, price: 15, currency: 'USD', popular: true },
+    { id: 'pack_2500', points: 2500, price: 30, currency: 'USD' },
+    { id: 'pack_5000', points: 5000, price: 50, currency: 'USD' },
+  ];
+  res.json({ success: true, packages });
 });
 
 module.exports = router; 
