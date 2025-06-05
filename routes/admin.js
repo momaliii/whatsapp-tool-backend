@@ -192,6 +192,51 @@ router.put('/users/:userId', adminAuth, async (req, res) => {
   }
 });
 
+// Ban user
+router.post('/users/:userId/ban', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.userId, { isActive: false });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, message: 'User banned' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error banning user' });
+  }
+});
+
+// Unban user
+router.post('/users/:userId/unban', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.userId, { isActive: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, message: 'User unbanned' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error unbanning user' });
+  }
+});
+
+// Add or minus points
+router.post('/users/:userId/points', adminAuth, async (req, res) => {
+  try {
+    const { action, amount } = req.body;
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (action === 'add') {
+      user.points += Math.abs(amount);
+    } else if (action === 'minus') {
+      user.points -= Math.abs(amount);
+      if (user.points < 0) user.points = 0;
+    } else {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    await user.save();
+    res.json({ success: true, points: user.points });
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating points' });
+  }
+});
+
 // Initialize default plans
 router.post('/plans/init', adminAuth, async (req, res) => {
   try {
