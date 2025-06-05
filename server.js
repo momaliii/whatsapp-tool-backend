@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/database');
+const { adminAuth } = require('./middleware/auth');
 
 const app = express();
 
@@ -29,6 +30,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 // Serve admin dashboard
-app.get('/admin', (req, res) => {
+app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard.html'));
 });
