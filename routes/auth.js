@@ -39,7 +39,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      points: 100, // Welcome bonus
+      points: 500, // Welcome bonus
       subscription: { plan: 'free' }
     });
     
