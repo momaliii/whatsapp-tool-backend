@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   },
   points: {
     type: Number,
-    default: 100 // Welcome bonus
+    default: 500 // Welcome bonus
   },
   subscription: {
     plan: {

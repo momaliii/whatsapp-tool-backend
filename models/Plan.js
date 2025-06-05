@@ -27,12 +27,12 @@ const planSchema = new mongoose.Schema({
     pointsIncluded: Number
   },
   pointCosts: {
-    sendMessage: { type: Number, default: 1 },
-    addMember: { type: Number, default: 2 },
-    extractMember: { type: Number, default: 1 },
-    validateNumber: { type: Number, default: 0.5 },
-    extractChatNumbers: { type: Number, default: 1 },
-    autoReply: { type: Number, default: 1 }
+    sendMessage: { type: Number, default: 0.5 },
+    addMember: { type: Number, default: 1 },
+    extractMember: { type: Number, default: 0.5 },
+    validateNumber: { type: Number, default: 0.2 },
+    extractChatNumbers: { type: Number, default: 0.5 },
+    autoReply: { type: Number, default: 0.5 }
   },
   isActive: {
     type: Boolean,
