@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const API_URL = 'https://whatsapp-tool-backend.onrender.com/api';
-const TEST_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2YzM5YzM5YzM5YzM5YzM5YzM5YzM5YyIsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NDI5MjQwMDAsImV4cCI6MTc0MzAxMDQwMH0.1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+const TEST_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODQyYjhjZmVjY2FlM2Q4MzI4NzZjNDciLCJpYXQiOjE3NDkyMDMxNTEsImV4cCI6MTc1MTc5NTE1MX0.wOfv1QVkcNJFEqivqK1Gb_ZnSMaV1e_7r4rvD5mJVIM';
 
 async function testPaymentIntegration() {
   try {
