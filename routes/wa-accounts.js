@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const router = express.Router();
-const authenticate = require('../middleware/authenticate');
+const { authenticate } = require('../middleware/auth');
 
 // List WhatsApp accounts
 router.get('/', authenticate, async (req, res) => {
