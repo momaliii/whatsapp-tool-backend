@@ -20,8 +20,8 @@ router.get('/methods', async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error('Error fetching payment methods:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch payment methods' });
+    console.error('Error fetching payment methods:', error.response?.data || error.message, error.config, error.code);
+    res.status(500).json({ error: 'Failed to fetch payment methods', details: error.response?.data || error.message });
   }
 });
 
