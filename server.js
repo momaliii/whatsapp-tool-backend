@@ -42,7 +42,7 @@ app.use('/api/points', require('./routes/points'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/wa-accounts', require('./routes/wa-accounts'));
-app.use('/api/payment', require('./routes/payment'));
+app.use('/api/payment', require('./routes/payment-routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
