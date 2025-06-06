@@ -49,7 +49,16 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  lastLogin: Date
+  lastLogin: Date,
+  whatsappAccounts: [
+    {
+      phoneNumber: String,
+      sessionData: mongoose.Schema.Types.Mixed, // or sessionFile: String if storing as files
+      status: { type: String, enum: ['online', 'offline'], default: 'offline' },
+      displayName: String,
+      createdAt: { type: Date, default: Date.now }
+    }
+  ]
 });
 
 // Reset monthly usage
