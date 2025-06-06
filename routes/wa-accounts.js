@@ -2,7 +2,6 @@ const express = require('express');
 const User = require('../models/User');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { Client, LocalAuth } = require('whatsapp-web.js');
 
 // List WhatsApp accounts
 router.get('/', authenticate, async (req, res) => {
@@ -10,42 +9,15 @@ router.get('/', authenticate, async (req, res) => {
   res.json({ success: true, accounts: user.whatsappAccounts || [] });
 });
 
-// Add WhatsApp account with QR code generation
+// Add WhatsApp account (placeholder, actual QR/session logic needed)
 router.post('/add', authenticate, async (req, res) => {
+  // Here you would start a new WhatsApp session and return a QR code
+  // For now, just add a placeholder account
   const { phoneNumber, displayName } = req.body;
   const user = await User.findById(req.user._id);
-  // Start a new WhatsApp session and generate QR code
-  const client = new Client({
-    authStrategy: new LocalAuth({ clientId: phoneNumber }),
-    puppeteer: { headless: true }
-  });
-  client.on('qr', async (qr) => {
-    // Store the QR code in the account
-    const newAccount = { phoneNumber, displayName, status: 'pending', qr };
-    user.whatsappAccounts.push(newAccount);
-    await user.save();
-    res.json({ success: true, qr, accountId: newAccount._id });
-  });
-  client.on('ready', async () => {
-    // Update account status to authenticated
-    const account = user.whatsappAccounts.find(acc => acc.phoneNumber === phoneNumber);
-    if (account) {
-      account.status = 'authenticated';
-      await user.save();
-    }
-  });
-  client.initialize();
-});
-
-// Check WhatsApp account session status
-router.get('/status', authenticate, async (req, res) => {
-  const { accountId } = req.query;
-  const user = await User.findById(req.user._id);
-  const account = user.whatsappAccounts.find(acc => acc._id.toString() === accountId);
-  if (!account) {
-    return res.status(404).json({ success: false, message: 'Account not found' });
-  }
-  res.json({ success: true, status: account.status });
+  user.whatsappAccounts.push({ phoneNumber, displayName, status: 'offline' });
+  await user.save();
+  res.json({ success: true, accounts: user.whatsappAccounts });
 });
 
 // Switch active WhatsApp account
