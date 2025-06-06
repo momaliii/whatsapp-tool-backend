@@ -4,6 +4,7 @@ const axios = require('axios');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
+const LicenseKey = require('../models/LicenseKey');
 
 // Fawaterak API configuration
 const FAWATERAK_API_URL = 'https://app.fawaterk.com/api/v2';
@@ -153,10 +154,17 @@ router.get('/verify/:paymentId', authenticate, async (req, res) => {
                     data.status === 'failed' ? 'failed' : 'pending';
     
     if (payment.status === 'success') {
-      // Add points to user
-      const user = await User.findById(req.user.id);
-      user.points += payment.points;
-      await user.save();
+      // Generate a license key
+      const key = `WA-${Math.random().toString(36).substr(2,4).toUpperCase()}-${Math.random().toString(36).substr(2,4).toUpperCase()}`;
+      const licenseKey = new LicenseKey({
+        key,
+        points: payment.points,
+        used: false,
+        createdBy: payment.userId
+      });
+      await licenseKey.save();
+      // Return the key in the response
+      return res.json({ success: true, licenseKey: key });
     }
 
     await payment.save();
