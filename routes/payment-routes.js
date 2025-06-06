@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 // Fawaterak API configuration
 const FAWATERAK_API_URL = 'https://staging.fawaterk.com/api/v2';
@@ -26,7 +26,7 @@ router.get('/methods', async (req, res) => {
 });
 
 // Initialize payment
-router.post('/initiate', auth, async (req, res) => {
+router.post('/initiate', authenticate, async (req, res) => {
   try {
     const {
       paymentMethodId,
@@ -124,7 +124,7 @@ router.post('/initiate', auth, async (req, res) => {
 });
 
 // Verify payment status
-router.get('/verify/:paymentId', auth, async (req, res) => {
+router.get('/verify/:paymentId', authenticate, async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.paymentId);
     if (!payment) {
