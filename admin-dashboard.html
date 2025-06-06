@@ -516,6 +516,10 @@
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
+                <a href="#" class="menu-item" data-page="wa-accounts">
+                    <i class="fas fa-user-circle"></i>
+                    <span>WhatsApp Accounts</span>
+                </a>
             </div>
         </nav>
 
@@ -842,6 +846,19 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- WhatsApp Accounts Page -->
+                <div class="page" id="wa-accounts-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Manage WhatsApp Accounts</h3>
+                            <button class="btn btn-success" onclick="openAddWaAccountModal()"><i class="fas fa-plus"></i> Add Account</button>
+                        </div>
+                        <div id="wa-accounts-list">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -881,6 +898,20 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Update Points</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Add WhatsApp Account Modal -->
+    <div class="modal" id="add-wa-account-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('add-wa-account-modal')">&times;</span>
+            <h3>Add WhatsApp Account</h3>
+            <form id="add-wa-account-form">
+                <input type="text" id="wa-phone-number" placeholder="Phone Number" required />
+                <input type="text" id="wa-display-name" placeholder="Display Name (optional)" />
+                <button type="submit" class="btn btn-success">Add Account</button>
+            </form>
+            <div id="add-wa-account-status"></div>
         </div>
     </div>
 
@@ -949,7 +980,8 @@
                 analytics: 'Analytics',
                 regional: 'Regional Statistics',
                 costs: 'Tool Costs',
-                settings: 'Settings'
+                settings: 'Settings',
+                waAccounts: 'WhatsApp Accounts'
             };
             document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
 
@@ -982,6 +1014,9 @@
                     break;
                 case 'costs':
                     await loadToolCosts();
+                    break;
+                case 'waAccounts':
+                    await loadWaAccounts();
                     break;
             }
         }
@@ -1278,6 +1313,75 @@
             }
         }
 
+        async function loadWaAccounts() {
+            try {
+                const data = await apiCall('/wa-accounts');
+                renderWaAccounts(data.accounts || []);
+            } catch (error) {
+                showNotification('Error loading WhatsApp accounts', 'error');
+            }
+        }
+
+        function renderWaAccounts(accounts) {
+            const container = document.getElementById('wa-accounts-list');
+            container.innerHTML = '';
+            if (!accounts.length) {
+                container.innerHTML = '<div style="text-align:center; color:#888;">No WhatsApp accounts added yet.</div>';
+                return;
+            }
+            accounts.forEach(account => {
+                const div = document.createElement('div');
+                div.className = 'wa-account';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.padding = '10px 0';
+                div.innerHTML = `
+                    <span><b>${account.phoneNumber}</b> ${account.displayName ? ' - ' + account.displayName : ''}</span>
+                    <button class="btn btn-sm btn-danger" onclick="deleteWaAccount('${account._id}')">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function deleteWaAccount(accountId) {
+            if (!confirm('Are you sure you want to delete this WhatsApp account?')) return;
+            try {
+                await apiCall('/wa-accounts/remove', { method: 'POST', body: JSON.stringify({ accountId }) });
+                showNotification('WhatsApp account deleted successfully!', 'success');
+                await loadWaAccounts();
+            } catch (error) {
+                showNotification('Error deleting WhatsApp account', 'error');
+            }
+        }
+
+        function openAddWaAccountModal() {
+            document.getElementById('add-wa-account-modal').classList.add('active');
+            document.getElementById('add-wa-account-status').textContent = '';
+            document.getElementById('add-wa-account-form').reset();
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        document.getElementById('add-wa-account-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const phoneNumber = document.getElementById('wa-phone-number').value;
+            const displayName = document.getElementById('wa-display-name').value;
+            const statusDiv = document.getElementById('add-wa-account-status');
+            statusDiv.textContent = 'Adding...';
+            try {
+                await apiCall('/wa-accounts/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ phoneNumber, displayName })
+                });
+                statusDiv.textContent = 'Account added!';
+                await loadWaAccounts();
+                setTimeout(() => closeModal('add-wa-account-modal'), 800);
+            } catch (error) {
+                statusDiv.textContent = 'Error adding account';
+            }
+        };
+
         // Action Functions
         async function generateKeys(e) {
             e.preventDefault();
@@ -1334,10 +1438,6 @@
             document.getElementById('points-amount').value = '';
             document.getElementById('points-reason').value = '';
             document.getElementById('points-modal').classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
         }
 
         async function updateUserPoints(e) {
