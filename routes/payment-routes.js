@@ -6,7 +6,7 @@ const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 
 // Fawaterak API configuration
-const FAWATERAK_API_URL = 'https://staging.fawaterk.com/api/v2';
+const FAWATERAK_API_URL = 'https://app.fawaterk.com/api/v2';
 const FAWATERAK_API_TOKEN = 'af864762b794ddbdc62cda431e28318da9c907401dfcd6d27f';
 
 // Get available payment methods
