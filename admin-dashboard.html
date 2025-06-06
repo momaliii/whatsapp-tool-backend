@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Tool - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #075E54;
+            --secondary-color: #128C7E;
+            --success-color: #25D366;
+            --danger-color: #DC3545;
+            --warning-color: #FFC107;
+            --info-color: #17A2B8;
+            --dark-color: #1c1e21;
+            --light-color: #f8f9fa;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        /* Layout */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--dark-color);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header i {
+            font-size: 24px;
+            color: var(--success-color);
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+            padding-left: 25px;
+        }
+
+        .menu-item.active {
+            background: var(--primary-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            height: var(--header-height);
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .api-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .api-status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .api-status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-icon.primary { background: #e3f2fd; color: #1976d2; }
+        .stat-icon.success { background: #e8f5e9; color: #388e3c; }
+        .stat-icon.warning { background: #fff3e0; color: #f57c00; }
+        .stat-icon.danger { background: #ffebee; color: #d32f2f; }
+
+        .stat-details h4 {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #064e47;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: var(--dark-color);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #e8f5e9; color: #2e7d32; }
+        .badge-danger { background: #ffebee; color: #c62828; }
+        .badge-warning { background: #fff3e0; color: #ef6c00; }
+        .badge-info { background: #e3f2fd; color: #0277bd; }
+
+        /* Search Box */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        /* Charts Container */
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        /* Responsive */
+        .menu-toggle {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Export Buttons */
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* User Actions */
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Points Input */
+        .points-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .points-input input {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fab fa-whatsapp"></i>
+                <h3>Admin Panel</h3>
+            </div>
+            <div class="sidebar-menu">
+                <a href="#" class="menu-item active" data-page="overview">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#" class="menu-item" data-page="users">
+                    <i class="fas fa-users"></i>
+                    <span>User Management</span>
+                </a>
+                <a href="#" class="menu-item" data-page="keys">
+                    <i class="fas fa-key"></i>
+                    <span>License Keys</span>
+                </a>
+                <a href="#" class="menu-item" data-page="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="menu-item" data-page="regional">
+                    <i class="fas fa-globe"></i>
+                    <span>Regional Stats</span>
+                </a>
+                <a href="#" class="menu-item" data-page="costs">
+                    <i class="fas fa-coins"></i>
+                    <span>Tool Costs</span>
+                </a>
+                <a href="#" class="menu-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="#" class="menu-item" data-page="wa-accounts">
+                    <i class="fas fa-user-circle"></i>
+                    <span>WhatsApp Accounts</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <i class="fas fa-bars menu-toggle" onclick="toggleSidebar()"></i>
+                    <h1 class="header-title" id="page-title">Overview</h1>
+                </div>
+                <div class="header-actions">
+                    <span class="api-status" id="api-status">
+                        <i class="fas fa-circle"></i> Checking...
+                    </span>
+                    <button class="btn btn-primary btn-sm" onclick="refreshData()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Overview Page -->
+                <div class="page active" id="overview-page">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Total Users</h4>
+                                <div class="stat-value" id="stat-total-users">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon success">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Active Users</h4>
+                                <div class="stat-value" id="stat-active-users">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Paid Users</h4>
+                                <div class="stat-value" id="stat-paid-users">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon danger">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Available Keys</h4>
+                                <div class="stat-value" id="stat-available-keys">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Activity</h3>
+                        </div>
+                        <div class="table-container">
+                            <table id="recent-activity-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management Page -->
+                <div class="page" id="users-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">User Management</h3>
+                            <div class="export-buttons">
+                                <button class="btn btn-primary btn-sm" onclick="exportUsers()">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search users..." id="user-search">
+                        </div>
+                        <div class="table-container">
+                            <table id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Points</th>
+                                        <th>Plan</th>
+                                        <th>Status</th>
+                                        <th>Joined</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="7" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- License Keys Page -->
+                <div class="page" id="keys-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Generate License Keys</h3>
+                        </div>
+                        <form id="generate-keys-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Type</label>
+                                    <select class="form-control" id="key-type">
+                                        <option value="points">Points Only</option>
+                                        <option value="subscription">Subscription Only</option>
+                                        <option value="both">Points + Subscription</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Points</label>
+                                    <input type="number" class="form-control" id="key-points" value="100" min="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" id="plan-group" style="display: none;">
+                                    <label>Plan</label>
+                                    <select class="form-control" id="key-plan">
+                                        <option value="basic">Basic</option>
+                                        <option value="pro">Pro</option>
+                                        <option value="enterprise">Enterprise</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="duration-group" style="display: none;">
+                                    <label>Duration (days)</label>
+                                    <input type="number" class="form-control" id="key-duration" value="30" min="1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Quantity</label>
+                                    <input type="number" class="form-control" id="key-quantity" value="1" min="1" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label>Expires In (days, 0 = never)</label>
+                                    <input type="number" class="form-control" id="key-expires" value="90" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <input type="text" class="form-control" id="key-notes" placeholder="Optional notes">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Generate Keys
+                            </button>
+                        </form>
+                        <div id="generated-keys" style="margin-top: 20px; display: none;">
+                            <h4>Generated Keys:</h4>
+                            <div id="keys-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">License Keys</h3>
+                            <div class="export-buttons">
+                                <button class="btn btn-primary btn-sm" onclick="exportKeys()">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search keys..." id="key-search">
+                        </div>
+                        <div class="table-container">
+                            <table id="keys-table">
+                                <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Type</th>
+                                        <th>Points</th>
+                                        <th>Plan</th>
+                                        <th>Status</th>
+                                        <th>Used By</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Page -->
+                <div class="page" id="analytics-page">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon primary">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Messages Sent</h4>
+                                <div class="stat-value" id="stat-messages-sent">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon success">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Members Added</h4>
+                                <div class="stat-value" id="stat-members-added">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon warning">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Members Extracted</h4>
+                                <div class="stat-value" id="stat-members-extracted">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon danger">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Numbers Validated</h4>
+                                <div class="stat-value" id="stat-numbers-validated">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Operation Analytics</h3>
+                        </div>
+                        <canvas id="operations-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Regional Stats Page -->
+                <div class="page" id="regional-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Users by Country</h3>
+                        </div>
+                        <div class="table-container">
+                            <table id="regional-table">
+                                <thead>
+                                    <tr>
+                                        <th>Country</th>
+                                        <th>Users</th>
+                                        <th>Active</th>
+                                        <th>Paid</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Costs Page -->
+                <div class="page" id="costs-page">
+                    <div id="costs-container">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div class="page" id="settings-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">API Configuration</h3>
+                        </div>
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label>API URL</label>
+                                <input type="text" class="form-control" id="api-url" value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Admin Secret</label>
+                                <input type="password" class="form-control" id="admin-secret" value="">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- WhatsApp Accounts Page -->
+                <div class="page" id="wa-accounts-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Manage WhatsApp Accounts</h3>
+                            <button class="btn btn-success" onclick="openAddWaAccountModal()"><i class="fas fa-plus"></i> Add Account</button>
+                        </div>
+                        <div id="wa-accounts-list">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Points Modal -->
+    <div class="modal" id="points-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Manage User Points</h3>
+                <span class="modal-close" onclick="closeModal('points-modal')">&times;</span>
+            </div>
+            <form id="points-form">
+                <input type="hidden" id="points-user-id">
+                <div class="form-group">
+                    <label>User Email</label>
+                    <input type="text" class="form-control" id="points-user-email" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Current Points</label>
+                    <input type="text" class="form-control" id="points-current" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Action</label>
+                    <select class="form-control" id="points-action">
+                        <option value="add">Add Points</option>
+                        <option value="subtract">Subtract Points</option>
+                        <option value="set">Set Points</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" class="form-control" id="points-amount" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Reason</label>
+                    <input type="text" class="form-control" id="points-reason" placeholder="Optional reason">
+                </div>
+                <button type="submit" class="btn btn-primary">Update Points</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add WhatsApp Account Modal -->
+    <div class="modal" id="add-wa-account-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('add-wa-account-modal')">&times;</span>
+            <h3>Add WhatsApp Account</h3>
+            <form id="add-wa-account-form">
+                <input type="text" id="wa-phone-number" placeholder="Phone Number" required />
+                <input type="text" id="wa-display-name" placeholder="Display Name (optional)" />
+                <button type="submit" class="btn btn-success">Add Account</button>
+            </form>
+            <div id="add-wa-account-status"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Configuration
+        let API_URL = localStorage.getItem('adminApiUrl') || 'https://whatsapp-tool-backend.onrender.com/api';
+        let ADMIN_SECRET = localStorage.getItem('adminSecret') || '';
+
+        // State
+        let currentPage = 'overview';
+        let users = [];
+        let keys = [];
+        let operationsChart = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            loadSettings();
+            checkApiConnection();
+            showPage('overview');
+        });
+
+        // Navigation
+        function setupEventListeners() {
+            // Sidebar navigation
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = item.getAttribute('data-page');
+                    showPage(page);
+                });
+            });
+
+            // Forms
+            document.getElementById('generate-keys-form').addEventListener('submit', generateKeys);
+            document.getElementById('settings-form').addEventListener('submit', saveSettings);
+            document.getElementById('points-form').addEventListener('submit', updateUserPoints);
+
+            // Key type change
+            document.getElementById('key-type').addEventListener('change', (e) => {
+                const showPlan = e.target.value === 'subscription' || e.target.value === 'both';
+                document.getElementById('plan-group').style.display = showPlan ? 'block' : 'none';
+                document.getElementById('duration-group').style.display = showPlan ? 'block' : 'none';
+            });
+
+            // Search
+            document.getElementById('user-search').addEventListener('input', filterUsers);
+            document.getElementById('key-search').addEventListener('input', filterKeys);
+        }
+
+        function showPage(page) {
+            // Update active menu
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-page') === page) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update page title
+            const titles = {
+                overview: 'Overview',
+                users: 'User Management',
+                keys: 'License Keys',
+                analytics: 'Analytics',
+                regional: 'Regional Statistics',
+                costs: 'Tool Costs',
+                settings: 'Settings',
+                waAccounts: 'WhatsApp Accounts'
+            };
+            document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
+
+            // Show page
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`${page}-page`).classList.add('active');
+
+            // Load page data
+            currentPage = page;
+            loadPageData(page);
+        }
+
+        async function loadPageData(page) {
+            switch(page) {
+                case 'overview':
+                    await loadStats();
+                    await loadRecentActivity();
+                    break;
+                case 'users':
+                    await loadUsers();
+                    break;
+                case 'keys':
+                    await loadKeys();
+                    break;
+                case 'analytics':
+                    await loadAnalytics();
+                    break;
+                case 'regional':
+                    await loadRegionalStats();
+                    break;
+                case 'costs':
+                    await loadToolCosts();
+                    break;
+                case 'waAccounts':
+                    await loadWaAccounts();
+                    break;
+            }
+        }
+
+        // API Functions
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'X-Admin-Secret': ADMIN_SECRET,
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'API error');
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                showNotification(error.message, 'error');
+                throw error;
+            }
+        }
+
+        async function checkApiConnection() {
+            try {
+                await apiCall('/admin/stats');
+                document.getElementById('api-status').innerHTML = '<i class="fas fa-circle"></i> Connected';
+                document.getElementById('api-status').className = 'api-status connected';
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = '<i class="fas fa-circle"></i> Disconnected';
+                document.getElementById('api-status').className = 'api-status disconnected';
+            }
+        }
+
+        // Data Loading Functions
+        async function loadStats() {
+            try {
+                const data = await apiCall('/admin/stats');
+                document.getElementById('stat-total-users').textContent = data.stats.totalUsers;
+                document.getElementById('stat-active-users').textContent = data.stats.activeUsers;
+                document.getElementById('stat-paid-users').textContent = data.stats.paidUsers;
+                document.getElementById('stat-available-keys').textContent = data.stats.availableKeys;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const data = await apiCall('/admin/activity?limit=10');
+                const tbody = document.querySelector('#recent-activity-table tbody');
+                tbody.innerHTML = '';
+                
+                if (data.activities && data.activities.length > 0) {
+                    data.activities.forEach(activity => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${new Date(activity.timestamp).toLocaleString()}</td>
+                            <td>${activity.userEmail || 'System'}</td>
+                            <td>${activity.action}</td>
+                            <td>${activity.details || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No recent activity</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const data = await apiCall('/admin/users');
+                users = data.users || [];
+                renderUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function renderUsers(filteredUsers = null) {
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = '';
+            
+            const usersToRender = filteredUsers || users;
+            
+            if (usersToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found</td></tr>';
+                return;
+            }
+
+            usersToRender.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.email}</td>
+                    <td>${user.name || '-'}</td>
+                    <td>${user.points || 0}</td>
+                    <td><span class="badge badge-info">${user.subscription?.plan || 'Free'}</span></td>
+                    <td><span class="badge badge-${user.isActive ? 'success' : 'danger'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="user-actions">
+                            <button class="btn btn-sm btn-primary" onclick="openPointsModal('${user._id}', '${user.email}', ${user.points || 0})">
+                                <i class="fas fa-coins"></i>
+                            </button>
+                            <button class="btn btn-sm btn-${user.isBanned ? 'success' : 'danger'}" onclick="toggleBan('${user._id}', ${user.isBanned})">
+                                <i class="fas fa-${user.isBanned ? 'unlock' : 'ban'}"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadKeys() {
+            try {
+                const data = await apiCall('/admin/keys?limit=50');
+                keys = data.keys || [];
+                renderKeys();
+            } catch (error) {
+                console.error('Error loading keys:', error);
+            }
+        }
+
+        function renderKeys(filteredKeys = null) {
+            const tbody = document.querySelector('#keys-table tbody');
+            tbody.innerHTML = '';
+            
+            const keysToRender = filteredKeys || keys;
+            
+            if (keysToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No keys found</td></tr>';
+                return;
+            }
+
+            keysToRender.forEach(key => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><code>${key.key}</code></td>
+                    <td>${key.type}</td>
+                    <td>${key.points || '-'}</td>
+                    <td>${key.subscription?.plan || '-'}</td>
+                    <td><span class="badge badge-${key.used ? 'danger' : 'success'}">${key.used ? 'Used' : 'Available'}</span></td>
+                    <td>${key.usedBy?.email || '-'}</td>
+                    <td>${new Date(key.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteKey('${key._id}')" ${key.used ? 'disabled' : ''}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadAnalytics() {
+            try {
+                const data = await apiCall('/admin/analytics');
+                
+                // Update stats
+                document.getElementById('stat-messages-sent').textContent = data.analytics.messagesSent || 0;
+                document.getElementById('stat-members-added').textContent = data.analytics.membersAdded || 0;
+                document.getElementById('stat-members-extracted').textContent = data.analytics.membersExtracted || 0;
+                document.getElementById('stat-numbers-validated').textContent = data.analytics.numbersValidated || 0;
+                
+                // Update chart
+                if (operationsChart) {
+                    operationsChart.destroy();
+                }
+                
+                const ctx = document.getElementById('operations-chart').getContext('2d');
+                operationsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Messages', 'Add Members', 'Extract Members', 'Validate Numbers'],
+                        datasets: [{
+                            label: 'Operations Count',
+                            data: [
+                                data.analytics.messagesSent || 0,
+                                data.analytics.membersAdded || 0,
+                                data.analytics.membersExtracted || 0,
+                                data.analytics.numbersValidated || 0
+                            ],
+                            backgroundColor: [
+                                '#1976d2',
+                                '#388e3c',
+                                '#f57c00',
+                                '#d32f2f'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        async function loadRegionalStats() {
+            try {
+                const data = await apiCall('/admin/regional-stats');
+                const tbody = document.querySelector('#regional-table tbody');
+                tbody.innerHTML = '';
+                
+                if (data.stats && data.stats.length > 0) {
+                    const totalUsers = data.stats.reduce((sum, country) => sum + country.total, 0);
+                    
+                    data.stats.forEach(country => {
+                        const percentage = ((country.total / totalUsers) * 100).toFixed(1);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${country.country}</td>
+                            <td>${country.total}</td>
+                            <td>${country.active}</td>
+                            <td>${country.paid}</td>
+                            <td>${percentage}%</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No regional data available</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading regional stats:', error);
+            }
+        }
+
+        async function loadToolCosts() {
+            try {
+                const data = await apiCall('/admin/plans');
+                const container = document.getElementById('costs-container');
+                container.innerHTML = '';
+                
+                data.plans.forEach(plan => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3 class="card-title">${plan.displayName} <small>(${plan.name})</small></h3>
+                        </div>
+                        <form class="tool-cost-form" data-plan="${plan.name}">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Send Message</label>
+                                    <input type="number" step="0.01" name="sendMessage" value="${plan.pointCosts.sendMessage}" required class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Add Member</label>
+                                    <input type="number" step="0.01" name="addMember" value="${plan.pointCosts.addMember}" required class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Extract Member</label>
+                                    <input type="number" step="0.01" name="extractMember" value="${plan.pointCosts.extractMember}" required class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Validate Number</label>
+                                    <input type="number" step="0.01" name="validateNumber" value="${plan.pointCosts.validateNumber}" required class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Extract Chat Numbers</label>
+                                    <input type="number" step="0.01" name="extractChatNumbers" value="${plan.pointCosts.extractChatNumbers || 0}" required class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Auto Reply</label>
+                                    <input type="number" step="0.01" name="autoReply" value="${plan.pointCosts.autoReply || 0}" required class="form-control">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <span class="save-status" style="margin-left: 15px;"></span>
+                        </form>
+                    `;
+                    container.appendChild(card);
+                    
+                    // Add form submit handler
+                    card.querySelector('form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        await updateToolCosts(e.target);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading tool costs:', error);
+            }
+        }
+
+        async function loadWaAccounts() {
+            try {
+                const data = await apiCall('/wa-accounts');
+                renderWaAccounts(data.accounts || []);
+            } catch (error) {
+                showNotification('Error loading WhatsApp accounts', 'error');
+            }
+        }
+
+        function renderWaAccounts(accounts) {
+            const container = document.getElementById('wa-accounts-list');
+            container.innerHTML = '';
+            if (!accounts.length) {
+                container.innerHTML = '<div style="text-align:center; color:#888;">No WhatsApp accounts added yet.</div>';
+                return;
+            }
+            accounts.forEach(account => {
+                const div = document.createElement('div');
+                div.className = 'wa-account';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.padding = '10px 0';
+                div.innerHTML = `
+                    <span><b>${account.phoneNumber}</b> ${account.displayName ? ' - ' + account.displayName : ''}</span>
+                    <button class="btn btn-sm btn-danger" onclick="deleteWaAccount('${account._id}')">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function deleteWaAccount(accountId) {
+            if (!confirm('Are you sure you want to delete this WhatsApp account?')) return;
+            try {
+                await apiCall('/wa-accounts/remove', { method: 'POST', body: JSON.stringify({ accountId }) });
+                showNotification('WhatsApp account deleted successfully!', 'success');
+                await loadWaAccounts();
+            } catch (error) {
+                showNotification('Error deleting WhatsApp account', 'error');
+            }
+        }
+
+        function openAddWaAccountModal() {
+            document.getElementById('add-wa-account-modal').classList.add('active');
+            document.getElementById('add-wa-account-status').textContent = '';
+            document.getElementById('add-wa-account-form').reset();
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        document.getElementById('add-wa-account-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const phoneNumber = document.getElementById('wa-phone-number').value;
+            const displayName = document.getElementById('wa-display-name').value;
+            const statusDiv = document.getElementById('add-wa-account-status');
+            statusDiv.textContent = 'Adding...';
+            try {
+                await apiCall('/wa-accounts/add', {
+                    method: 'POST',
+                    body: JSON.stringify({ phoneNumber, displayName })
+                });
+                statusDiv.textContent = 'Account added!';
+                await loadWaAccounts();
+                setTimeout(() => closeModal('add-wa-account-modal'), 800);
+            } catch (error) {
+                statusDiv.textContent = 'Error adding account';
+            }
+        };
+
+        // Action Functions
+        async function generateKeys(e) {
+            e.preventDefault();
+            
+            const data = {
+                type: document.getElementById('key-type').value,
+                points: parseInt(document.getElementById('key-points').value),
+                plan: document.getElementById('key-plan').value,
+                duration: parseInt(document.getElementById('key-duration').value),
+                quantity: parseInt(document.getElementById('key-quantity').value),
+                expiresIn: parseInt(document.getElementById('key-expires').value),
+                notes: document.getElementById('key-notes').value
+            };
+            
+            try {
+                const result = await apiCall('/admin/keys/generate', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                
+                // Display generated keys
+                const keysList = document.getElementById('keys-list');
+                keysList.innerHTML = result.keys.map(k => 
+                    `<div style="margin: 5px 0;"><code>${k.key}</code></div>`
+                ).join('');
+                document.getElementById('generated-keys').style.display = 'block';
+                
+                showNotification(`Generated ${result.keys.length} keys successfully!`, 'success');
+                
+                // Reload keys
+                await loadKeys();
+            } catch (error) {
+                showNotification('Error generating keys', 'error');
+            }
+        }
+
+        async function toggleBan(userId, currentlyBanned) {
+            const action = currentlyBanned ? 'unban' : 'ban';
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+            
+            try {
+                await apiCall(`/admin/users/${userId}/${action}`, { method: 'POST' });
+                showNotification(`User ${action}ned successfully!`, 'success');
+                await loadUsers();
+            } catch (error) {
+                showNotification(`Error ${action}ning user`, 'error');
+            }
+        }
+
+        function openPointsModal(userId, email, currentPoints) {
+            document.getElementById('points-user-id').value = userId;
+            document.getElementById('points-user-email').value = email;
+            document.getElementById('points-current').value = currentPoints;
+            document.getElementById('points-amount').value = '';
+            document.getElementById('points-reason').value = '';
+            document.getElementById('points-modal').classList.add('active');
+        }
+
+        async function updateUserPoints(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('points-user-id').value;
+            const action = document.getElementById('points-action').value;
+            const amount = parseInt(document.getElementById('points-amount').value);
+            const reason = document.getElementById('points-reason').value;
+            
+            try {
+                await apiCall(`/admin/users/${userId}/points`, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, amount, reason })
+                });
+                
+                showNotification('Points updated successfully!', 'success');
+                closeModal('points-modal');
+                await loadUsers();
+            } catch (error) {
+                showNotification('Error updating points', 'error');
+            }
+        }
+
+        async function deleteKey(keyId) {
+            if (!confirm('Are you sure you want to delete this key?')) return;
+            
+            try {
+                await apiCall(`/admin/keys/${keyId}`, { method: 'DELETE' });
+                showNotification('Key deleted successfully!', 'success');
+                await loadKeys();
+            } catch (error) {
+                showNotification('Error deleting key', 'error');
+            }
+        }
+
+        async function updateToolCosts(form) {
+            const plan = form.getAttribute('data-plan');
+            const status = form.querySelector('.save-status');
+            
+            const pointCosts = {
+                sendMessage: parseFloat(form.sendMessage.value),
+                addMember: parseFloat(form.addMember.value),
+                extractMember: parseFloat(form.extractMember.value),
+                validateNumber: parseFloat(form.validateNumber.value),
+                extractChatNumbers: parseFloat(form.extractChatNumbers.value),
+                autoReply: parseFloat(form.autoReply.value)
+            };
+            
+            status.textContent = 'Saving...';
+            status.style.color = '#666';
+            
+            try {
+                await apiCall(`/admin/plans/${plan}/point-costs`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ pointCosts })
+                });
+                
+                status.textContent = 'Saved!';
+                status.style.color = '#2e7d32';
+                setTimeout(() => { status.textContent = ''; }, 3000);
+            } catch (error) {
+                status.textContent = 'Error saving';
+                status.style.color = '#d32f2f';
+            }
+        }
+
+        // Settings
+        function loadSettings() {
+            document.getElementById('api-url').value = API_URL;
+            document.getElementById('admin-secret').value = ADMIN_SECRET;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            
+            API_URL = document.getElementById('api-url').value;
+            ADMIN_SECRET = document.getElementById('admin-secret').value;
+            
+            localStorage.setItem('adminApiUrl', API_URL);
+            localStorage.setItem('adminSecret', ADMIN_SECRET);
+            
+            showNotification('Settings saved successfully!', 'success');
+            checkApiConnection();
+        }
+
+        // Export Functions
+        async function exportUsers() {
+            try {
+                const data = await apiCall('/admin/users/export');
+                downloadCSV(data.csv, 'users.csv');
+            } catch (error) {
+                showNotification('Error exporting users', 'error');
+            }
+        }
+
+        async function exportKeys() {
+            try {
+                const data = await apiCall('/admin/keys/export');
+                downloadCSV(data.csv, 'keys.csv');
+            } catch (error) {
+                showNotification('Error exporting keys', 'error');
+            }
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Filter Functions
+        function filterUsers(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = users.filter(user => 
+                user.email.toLowerCase().includes(searchTerm) ||
+                (user.name && user.name.toLowerCase().includes(searchTerm))
+            );
+            renderUsers(filtered);
+        }
+
+        function filterKeys(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = keys.filter(key => 
+                key.key.toLowerCase().includes(searchTerm) ||
+                (key.usedBy?.email && key.usedBy.email.toLowerCase().includes(searchTerm))
+            );
+            renderKeys(filtered);
+        }
+
+        // Utility Functions
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function refreshData() {
+            loadPageData(currentPage);
+            showNotification('Data refreshed!', 'success');
+        }
+
+        function showNotification(message, type = 'info') {
+            // You can implement a toast notification system here
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // Auto-refresh
+        setInterval(() => {
+            if (currentPage === 'overview') {
+                loadStats();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
