@@ -85,17 +85,14 @@ app.post('/admin/login', express.json(), async (req, res) => {
 // --- AI Agent Settings & OpenAI Integration ---
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Save AI Agent settings (persistent)
+// Save AI Agent settings (persistent, upsert)
 app.post('/api/ai-agent-settings', async (req, res) => {
   try {
-    let settings = await AiAgentSettings.findOne();
-    if (!settings) {
-      settings = new AiAgentSettings(req.body);
-    } else {
-      settings.enabled = req.body.enabled;
-      settings.prompt = req.body.prompt;
-    }
-    await settings.save();
+    await AiAgentSettings.findOneAndUpdate(
+      {},
+      { enabled: req.body.enabled, prompt: req.body.prompt },
+      { new: true, upsert: true }
+    );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save settings.' });
