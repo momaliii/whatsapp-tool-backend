@@ -7,7 +7,7 @@ const { adminAuth } = require('./middleware/auth');
 const session = require('express-session');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 const app = express();
 
@@ -82,7 +82,7 @@ app.post('/admin/login', express.json(), async (req, res) => {
 });
 
 // --- AI Agent Settings & OpenAI Integration ---
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 let aiAgentSettings = { enabled: false, prompt: '' };
 
@@ -104,14 +104,14 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     return res.status(400).json({ error: 'AI Agent is not enabled or prompt is missing.' });
   }
   try {
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { role: 'system', content: aiAgentSettings.prompt },
         { role: 'user', content: message }
       ]
     });
-    const aiReply = response.data.choices[0].message.content;
+    const aiReply = response.choices[0].message.content;
     res.json({ reply: aiReply });
   } catch (err) {
     console.error('OpenAI error:', err);
