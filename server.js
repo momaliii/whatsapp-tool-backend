@@ -9,6 +9,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const OpenAI = require('openai');
 const AiAgentSettings = require('./models/AiAgentSettings');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 
@@ -148,6 +150,44 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     console.error('--- END AI Agent Error Details ---');
     // --- END DETAILED ERROR LOGGING ---
     res.status(500).json({ error: 'Failed to get AI reply.' });
+  }
+});
+
+// Multer setup for AI Agent knowledge files
+const knowledgeUploadDir = path.join(__dirname, 'uploads', 'ai-knowledge');
+if (!fs.existsSync(knowledgeUploadDir)) fs.mkdirSync(knowledgeUploadDir, { recursive: true });
+const knowledgeStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, knowledgeUploadDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, unique + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_'));
+  }
+});
+const knowledgeUpload = multer({ storage: knowledgeStorage });
+
+// Upload endpoint for AI Agent knowledge files
+app.post('/api/ai-agent-knowledge-upload', knowledgeUpload.array('files', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded.' });
+    }
+    const filesMeta = req.files.map(f => ({
+      filename: f.filename,
+      originalname: f.originalname,
+      mimetype: f.mimetype,
+      size: f.size,
+      uploadedAt: new Date()
+    }));
+    // Update the AiAgentSettings document (append to knowledgeFiles)
+    const settings = await AiAgentSettings.findOneAndUpdate(
+      {},
+      { $push: { knowledgeFiles: { $each: filesMeta } } },
+      { new: true, upsert: true }
+    );
+    res.json({ success: true, files: settings.knowledgeFiles });
+  } catch (err) {
+    console.error('AI Agent knowledge file upload error:', err);
+    res.status(500).json({ error: 'Failed to upload knowledge files.' });
   }
 });
 
