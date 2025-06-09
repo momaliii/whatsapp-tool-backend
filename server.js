@@ -7,6 +7,7 @@ const { adminAuth } = require('./middleware/auth');
 const session = require('express-session');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
 
@@ -77,6 +78,44 @@ app.post('/admin/login', express.json(), async (req, res) => {
   } catch (error) {
     console.error('Admin login error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- AI Agent Settings & OpenAI Integration ---
+const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+
+let aiAgentSettings = { enabled: false, prompt: '' };
+
+// Save AI Agent settings
+app.post('/api/ai-agent-settings', (req, res) => {
+  aiAgentSettings = req.body;
+  res.json({ success: true });
+});
+
+// Load AI Agent settings
+app.get('/api/ai-agent-settings', (req, res) => {
+  res.json(aiAgentSettings);
+});
+
+// Endpoint to get AI reply (for testing)
+app.post('/api/ai-agent-reply', async (req, res) => {
+  const { message } = req.body;
+  if (!aiAgentSettings.enabled || !aiAgentSettings.prompt) {
+    return res.status(400).json({ error: 'AI Agent is not enabled or prompt is missing.' });
+  }
+  try {
+    const response = await openai.createChatCompletion({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: aiAgentSettings.prompt },
+        { role: 'user', content: message }
+      ]
+    });
+    const aiReply = response.data.choices[0].message.content;
+    res.json({ reply: aiReply });
+  } catch (err) {
+    console.error('OpenAI error:', err);
+    res.status(500).json({ error: 'Failed to get AI reply.' });
   }
 });
 
