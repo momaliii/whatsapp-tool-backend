@@ -128,7 +128,25 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     const aiReply = response.choices[0].message.content;
     res.json({ reply: aiReply });
   } catch (err) {
-    console.error('OpenAI error:', err);
+    // --- BEGIN DETAILED ERROR LOGGING ---
+    console.error('--- AI Agent Error Details ---');
+    console.error('Incoming message:', message);
+    try {
+      const settings = await AiAgentSettings.findOne();
+      console.error('AI Agent settings:', settings);
+    } catch (settingsErr) {
+      console.error('Failed to fetch AI Agent settings for error log:', settingsErr);
+    }
+    if (err.response) {
+      // OpenAI API error with response
+      console.error('OpenAI API error response:', err.response.data);
+    }
+    console.error('Full error object:', err);
+    if (err.stack) {
+      console.error('Error stack:', err.stack);
+    }
+    console.error('--- END AI Agent Error Details ---');
+    // --- END DETAILED ERROR LOGGING ---
     res.status(500).json({ error: 'Failed to get AI reply.' });
   }
 });
