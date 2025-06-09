@@ -8,6 +8,7 @@ const session = require('express-session');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const OpenAI = require('openai');
+const AiAgentSettings = require('./models/AiAgentSettings');
 
 const app = express();
 
@@ -84,30 +85,46 @@ app.post('/admin/login', express.json(), async (req, res) => {
 // --- AI Agent Settings & OpenAI Integration ---
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-let aiAgentSettings = { enabled: false, prompt: '' };
-
-// Save AI Agent settings
-app.post('/api/ai-agent-settings', (req, res) => {
-  aiAgentSettings = req.body;
-  res.json({ success: true });
+// Save AI Agent settings (persistent)
+app.post('/api/ai-agent-settings', async (req, res) => {
+  try {
+    let settings = await AiAgentSettings.findOne();
+    if (!settings) {
+      settings = new AiAgentSettings(req.body);
+    } else {
+      settings.enabled = req.body.enabled;
+      settings.prompt = req.body.prompt;
+    }
+    await settings.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save settings.' });
+  }
 });
 
-// Load AI Agent settings
-app.get('/api/ai-agent-settings', (req, res) => {
-  res.json(aiAgentSettings);
+// Load AI Agent settings (persistent)
+app.get('/api/ai-agent-settings', async (req, res) => {
+  try {
+    let settings = await AiAgentSettings.findOne();
+    if (!settings) settings = new AiAgentSettings();
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load settings.' });
+  }
 });
 
-// Endpoint to get AI reply (for testing)
+// Endpoint to get AI reply (for testing, persistent)
 app.post('/api/ai-agent-reply', async (req, res) => {
   const { message } = req.body;
-  if (!aiAgentSettings.enabled || !aiAgentSettings.prompt) {
-    return res.status(400).json({ error: 'AI Agent is not enabled or prompt is missing.' });
-  }
   try {
+    const settings = await AiAgentSettings.findOne();
+    if (!settings || !settings.enabled || !settings.prompt) {
+      return res.status(400).json({ error: 'AI Agent is not enabled or prompt is missing.' });
+    }
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        { role: 'system', content: aiAgentSettings.prompt },
+        { role: 'system', content: settings.prompt },
         { role: 'user', content: message }
       ]
     });
