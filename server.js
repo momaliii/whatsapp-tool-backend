@@ -126,16 +126,10 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     if (settings.knowledgeFiles && Array.isArray(settings.knowledgeFiles) && settings.knowledgeFiles.length > 0) {
       const allowedExts = ['.txt', '.csv', '.md'];
       for (const file of settings.knowledgeFiles) {
-        const ext = path.extname(file.filename).toLowerCase();
-        if (allowedExts.includes(ext)) {
-          const filePath = path.join(__dirname, 'uploads', 'ai-knowledge', file.filename);
-          try {
-            const content = fs.readFileSync(filePath, 'utf8');
-            knowledgeText += `\n--- File: ${file.originalname} ---\n` + content + '\n';
-            if (knowledgeText.length > 12000) break; // Limit total content
-          } catch (e) {
-            console.warn('Failed to read knowledge file:', filePath, e.message);
-          }
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowedExts.includes(ext) && file.content) {
+          knowledgeText += `\n--- File: ${file.originalname} ---\n` + file.content + '\n';
+          if (knowledgeText.length > 12000) break; // Limit total content
         }
       }
       if (knowledgeText.length > 12000) {
@@ -159,54 +153,30 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     const aiReply = response.choices[0].message.content;
     res.json({ reply: aiReply });
   } catch (err) {
-    // --- BEGIN DETAILED ERROR LOGGING ---
-    console.error('--- AI Agent Error Details ---');
-    console.error('Incoming message:', message);
-    try {
-      const settings = await AiAgentSettings.findOne();
-      console.error('AI Agent settings:', settings);
-    } catch (settingsErr) {
-      console.error('Failed to fetch AI Agent settings for error log:', settingsErr);
-    }
-    if (err.response) {
-      // OpenAI API error with response
-      console.error('OpenAI API error response:', err.response.data);
-    }
-    console.error('Full error object:', err);
-    if (err.stack) {
-      console.error('Error stack:', err.stack);
-    }
-    console.error('--- END AI Agent Error Details ---');
-    // --- END DETAILED ERROR LOGGING ---
+    console.error('AI Agent error:', err);
     res.status(500).json({ error: 'Failed to get AI reply.' });
   }
 });
 
-// Multer setup for AI Agent knowledge files
-const knowledgeUploadDir = path.join(__dirname, 'uploads', 'ai-knowledge');
-if (!fs.existsSync(knowledgeUploadDir)) fs.mkdirSync(knowledgeUploadDir, { recursive: true });
-const knowledgeStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, knowledgeUploadDir),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, unique + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_'));
-  }
-});
-const knowledgeUpload = multer({ storage: knowledgeStorage });
-
 // Upload endpoint for AI Agent knowledge files
-app.post('/api/ai-agent-knowledge-upload', knowledgeUpload.array('files', 10), async (req, res) => {
+app.post('/api/ai-agent-knowledge-upload', async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
+    const { files } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded.' });
     }
-    const filesMeta = req.files.map(f => ({
-      filename: f.filename,
-      originalname: f.originalname,
-      mimetype: f.mimetype,
-      size: f.size,
-      uploadedAt: new Date()
+
+    const filesMeta = await Promise.all(files.map(async (file) => {
+      const content = file.content;
+      return {
+        originalname: file.name,
+        mimetype: file.type,
+        size: content.length,
+        content: content,
+        uploadedAt: new Date()
+      };
     }));
+
     // Update the AiAgentSettings document (append to knowledgeFiles)
     const settings = await AiAgentSettings.findOneAndUpdate(
       {},

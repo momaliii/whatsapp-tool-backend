@@ -5,10 +5,10 @@ const AiAgentSettingsSchema = new mongoose.Schema({
   prompt: { type: String, default: '' },
   knowledgeFiles: [
     {
-      filename: String, // stored filename on server
       originalname: String, // original uploaded name
       mimetype: String,
       size: Number,
+      content: String, // file content stored directly
       uploadedAt: { type: Date, default: Date.now }
     }
   ]
