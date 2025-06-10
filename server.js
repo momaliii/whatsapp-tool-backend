@@ -190,6 +190,30 @@ app.post('/api/ai-agent-knowledge-upload', async (req, res) => {
   }
 });
 
+// Delete endpoint for AI Agent knowledge files
+app.delete('/api/ai-agent-knowledge/:index', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index);
+    if (isNaN(index)) {
+      return res.status(400).json({ error: 'Invalid file index.' });
+    }
+
+    const settings = await AiAgentSettings.findOne();
+    if (!settings || !settings.knowledgeFiles || index >= settings.knowledgeFiles.length) {
+      return res.status(404).json({ error: 'File not found.' });
+    }
+
+    // Remove the file at the specified index
+    settings.knowledgeFiles.splice(index, 1);
+    await settings.save();
+
+    res.json({ success: true, files: settings.knowledgeFiles });
+  } catch (err) {
+    console.error('AI Agent knowledge file delete error:', err);
+    res.status(500).json({ error: 'Failed to delete knowledge file.' });
+  }
+});
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/points', require('./routes/points'));
