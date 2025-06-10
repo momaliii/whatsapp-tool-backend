@@ -120,10 +120,39 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     if (!settings || !settings.enabled || !settings.prompt) {
       return res.status(400).json({ error: 'AI Agent is not enabled or prompt is missing.' });
     }
+
+    // Read and concatenate all text-based knowledge files
+    let knowledgeText = '';
+    if (settings.knowledgeFiles && Array.isArray(settings.knowledgeFiles) && settings.knowledgeFiles.length > 0) {
+      const allowedExts = ['.txt', '.csv', '.md'];
+      for (const file of settings.knowledgeFiles) {
+        const ext = path.extname(file.filename).toLowerCase();
+        if (allowedExts.includes(ext)) {
+          const filePath = path.join(__dirname, 'uploads', 'ai-knowledge', file.filename);
+          try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            knowledgeText += `\n--- File: ${file.originalname} ---\n` + content + '\n';
+            if (knowledgeText.length > 12000) break; // Limit total content
+          } catch (e) {
+            console.warn('Failed to read knowledge file:', filePath, e.message);
+          }
+        }
+      }
+      if (knowledgeText.length > 12000) {
+        knowledgeText = knowledgeText.slice(0, 12000) + '\n... (truncated)';
+      }
+    }
+
+    // Compose the system prompt
+    let systemPrompt = settings.prompt;
+    if (knowledgeText) {
+      systemPrompt += '\n\nKnowledge Base:\n' + knowledgeText;
+    }
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        { role: 'system', content: settings.prompt },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ]
     });
