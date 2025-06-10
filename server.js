@@ -11,6 +11,7 @@ const OpenAI = require('openai');
 const AiAgentSettings = require('./models/AiAgentSettings');
 const multer = require('multer');
 const fs = require('fs');
+const { google } = require('googleapis');
 
 const app = express();
 
@@ -112,7 +113,120 @@ app.get('/api/ai-agent-settings', async (req, res) => {
   }
 });
 
-// Endpoint to get AI reply (for testing, persistent)
+// Google Sheets API configuration
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY; // Add this to your .env file
+
+// Function to extract sheet ID from Google Sheets URL
+function extractSheetId(url) {
+  try {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Function to fetch sheet data
+async function fetchSheetData(sheetId, range = 'A1:Z1000') {
+  try {
+    if (!GOOGLE_API_KEY) {
+      throw new Error('Google API key not configured');
+    }
+
+    const sheets = google.sheets({ 
+      version: 'v4',
+      auth: GOOGLE_API_KEY
+    });
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: range,
+    });
+    return response.data.values;
+  } catch (error) {
+    console.error('Error fetching sheet data:', error);
+    throw error;
+  }
+}
+
+// Endpoint to add Google Sheet
+app.post('/api/ai-agent-sheets', async (req, res) => {
+  try {
+    const { name, url, range } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'Sheet URL is required.' });
+    }
+
+    const sheetId = extractSheetId(url);
+    if (!sheetId) {
+      return res.status(400).json({ error: 'Invalid Google Sheets URL.' });
+    }
+
+    // Check if sheet is publicly accessible
+    try {
+      await fetchSheetData(sheetId, 'A1');
+    } catch (error) {
+      return res.status(400).json({ 
+        error: 'Unable to access the sheet. Please make sure the sheet is publicly accessible (Anyone with the link can view).' 
+      });
+    }
+
+    // Fetch sheet data
+    const sheetData = await fetchSheetData(sheetId, range);
+    
+    // Update settings with new sheet
+    const settings = await AiAgentSettings.findOneAndUpdate(
+      {},
+      {
+        $push: {
+          googleSheets: {
+            name: name || 'Untitled Sheet',
+            url,
+            sheetId,
+            range: range || 'A1:Z1000',
+            lastSync: new Date(),
+            data: JSON.stringify(sheetData)
+          }
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.json({ success: true, sheets: settings.googleSheets });
+  } catch (err) {
+    console.error('Google Sheets integration error:', err);
+    if (err.message === 'Google API key not configured') {
+      res.status(500).json({ error: 'Google Sheets integration is not configured on the server.' });
+    } else {
+      res.status(500).json({ error: 'Failed to add Google Sheet.' });
+    }
+  }
+});
+
+// Endpoint to delete Google Sheet
+app.delete('/api/ai-agent-sheets/:index', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index);
+    if (isNaN(index)) {
+      return res.status(400).json({ error: 'Invalid sheet index.' });
+    }
+
+    const settings = await AiAgentSettings.findOne();
+    if (!settings || !settings.googleSheets || index >= settings.googleSheets.length) {
+      return res.status(404).json({ error: 'Sheet not found.' });
+    }
+
+    settings.googleSheets.splice(index, 1);
+    await settings.save();
+
+    res.json({ success: true, sheets: settings.googleSheets });
+  } catch (err) {
+    console.error('Google Sheets delete error:', err);
+    res.status(500).json({ error: 'Failed to delete Google Sheet.' });
+  }
+});
+
+// Update the AI reply endpoint to include sheet data
 app.post('/api/ai-agent-reply', async (req, res) => {
   const { message } = req.body;
   try {
@@ -129,12 +243,30 @@ app.post('/api/ai-agent-reply', async (req, res) => {
         const ext = path.extname(file.originalname).toLowerCase();
         if (allowedExts.includes(ext) && file.content) {
           knowledgeText += `\n--- File: ${file.originalname} ---\n` + file.content + '\n';
-          if (knowledgeText.length > 12000) break; // Limit total content
+          if (knowledgeText.length > 12000) break;
         }
       }
-      if (knowledgeText.length > 12000) {
-        knowledgeText = knowledgeText.slice(0, 12000) + '\n... (truncated)';
+    }
+
+    // Add Google Sheets data
+    if (settings.googleSheets && Array.isArray(settings.googleSheets) && settings.googleSheets.length > 0) {
+      for (const sheet of settings.googleSheets) {
+        try {
+          const sheetData = JSON.parse(sheet.data);
+          if (sheetData && sheetData.length > 0) {
+            knowledgeText += `\n--- Google Sheet: ${sheet.name} ---\n`;
+            knowledgeText += sheetData.map(row => row.join('\t')).join('\n');
+            knowledgeText += '\n';
+            if (knowledgeText.length > 12000) break;
+          }
+        } catch (e) {
+          console.warn('Failed to parse sheet data:', sheet.name, e.message);
+        }
       }
+    }
+
+    if (knowledgeText.length > 12000) {
+      knowledgeText = knowledgeText.slice(0, 12000) + '\n... (truncated)';
     }
 
     // Compose the system prompt
