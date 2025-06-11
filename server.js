@@ -154,21 +154,22 @@ app.post('/api/ai-agent-sheets', async (req, res) => {
   try {
     const { name, url, range } = req.body;
     if (!url) {
-      return res.status(400).json({ error: 'Sheet URL is required.' });
+      const settings = await AiAgentSettings.findOne();
+      return res.json({ success: true, sheets: settings ? settings.googleSheets : [] });
     }
 
     const sheetId = extractSheetId(url);
     if (!sheetId) {
-      return res.status(400).json({ error: 'Invalid Google Sheets URL.' });
+      const settings = await AiAgentSettings.findOne();
+      return res.json({ success: true, sheets: settings ? settings.googleSheets : [] });
     }
 
     // Check if sheet is publicly accessible
     try {
       await fetchSheetData(sheetId, 'A1');
     } catch (error) {
-      return res.status(400).json({ 
-        error: 'Unable to access the sheet. Please make sure the sheet is publicly accessible (Anyone with the link can view).' 
-      });
+      const settings = await AiAgentSettings.findOne();
+      return res.json({ success: true, sheets: settings ? settings.googleSheets : [] });
     }
 
     // Fetch sheet data
@@ -196,9 +197,11 @@ app.post('/api/ai-agent-sheets', async (req, res) => {
   } catch (err) {
     console.error('Google Sheets integration error:', err);
     if (err.message === 'Google API key not configured') {
-      res.status(500).json({ error: 'Google Sheets integration is not configured on the server.' });
+      const settings = await AiAgentSettings.findOne();
+      res.status(500).json({ error: 'Google Sheets integration is not configured on the server.', sheets: settings ? settings.googleSheets : [] });
     } else {
-      res.status(500).json({ error: 'Failed to add Google Sheet.' });
+      const settings = await AiAgentSettings.findOne();
+      res.status(500).json({ error: 'Failed to add Google Sheet.', sheets: settings ? settings.googleSheets : [] });
     }
   }
 });
