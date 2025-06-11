@@ -11,6 +11,16 @@ const AiAgentSettingsSchema = new mongoose.Schema({
       content: String, // file content stored directly
       uploadedAt: { type: Date, default: Date.now }
     }
+  ],
+  googleSheets: [
+    {
+      name: String,
+      url: String,
+      sheetId: String,
+      range: { type: String, default: 'A1:Z1000' },
+      lastSync: { type: Date, default: Date.now },
+      data: String // Store sheet data as JSON string
+    }
   ]
 }, { collection: 'ai_agent_settings' });
 
