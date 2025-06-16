@@ -12,8 +12,6 @@ const AiAgentSettings = require('./models/AiAgentSettings');
 const multer = require('multer');
 const fs = require('fs');
 const { google } = require('googleapis');
-const notificationRoutes = require('./routes/notificationRoutes');
-const schedulerService = require('./services/schedulerService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -384,9 +382,6 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/wa-accounts', require('./routes/wa-accounts'));
 app.use('/api/payment', require('./routes/payment-routes'));
 
-// Add notification routes
-app.use('/api/notifications', notificationRoutes);
-
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -494,7 +489,7 @@ app.get('/api/test-all-emails', async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
+  res.status(500).json({ 
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
@@ -545,6 +540,3 @@ app.get('/auth/google/callback', async (req, res) => {
     res.status(500).send('Authentication failed');
   }
 });
-
-// Start the scheduler
-schedulerService.start();

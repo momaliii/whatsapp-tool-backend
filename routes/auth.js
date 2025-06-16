@@ -34,21 +34,13 @@ router.post('/signup', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Calculate trial end date (7 days from now)
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-    
-    // Create user with trial plan
+    // Create user
     const user = new User({
       email,
       password: hashedPassword,
       name,
-      points: 1000, // Welcome bonus points
-      subscription: {
-        plan: 'trial',
-        trialEndsAt,
-        autoRenew: false
-      }
+      points: 500, // Welcome bonus
+      subscription: { plan: 'free' }
     });
     
     await user.save();
@@ -64,11 +56,7 @@ router.post('/signup', async (req, res) => {
         email: user.email,
         name: user.name,
         points: user.points,
-        subscription: {
-          plan: user.subscription.plan,
-          trialEndsAt: user.subscription.trialEndsAt,
-          daysRemaining: Math.ceil((user.subscription.trialEndsAt - new Date()) / (1000 * 60 * 60 * 24))
-        }
+        subscription: user.subscription
       }
     });
   } catch (error) {

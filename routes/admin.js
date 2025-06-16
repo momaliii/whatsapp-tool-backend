@@ -223,11 +223,9 @@ router.post('/users/:userId/points', adminAuth, async (req, res) => {
 
     if (action === 'add') {
       user.points += Math.abs(amount);
-    } else if (action === 'minus' || action === 'subtract') {
+    } else if (action === 'minus') {
       user.points -= Math.abs(amount);
       if (user.points < 0) user.points = 0;
-    } else if (action === 'set') {
-      user.points = Math.max(0, Math.floor(amount));
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
@@ -402,17 +400,6 @@ router.get('/plans', adminAuth, async (req, res) => {
     res.json({ success: true, plans });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching plans' });
-  }
-});
-
-// Delete license key
-router.delete('/keys/:keyId', adminAuth, async (req, res) => {
-  try {
-    const key = await LicenseKey.findByIdAndDelete(req.params.keyId);
-    if (!key) return res.status(404).json({ error: 'License key not found' });
-    res.json({ success: true, message: 'License key deleted' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error deleting license key' });
   }
 });
 

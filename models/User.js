@@ -39,22 +39,13 @@ const userSchema = new mongoose.Schema({
   },
   points: {
     type: Number,
-    default: 1000 // Increased welcome bonus points
+    default: 500 // Welcome bonus
   },
   subscription: {
     plan: {
       type: String,
-      enum: ['trial', 'free', 'basic', 'pro', 'enterprise'],
-      default: 'trial'
-    },
-    trialEndsAt: {
-      type: Date,
-      default: function() {
-        // Set trial period to 7 days from creation
-        const trialEnd = new Date();
-        trialEnd.setDate(trialEnd.getDate() + 7);
-        return trialEnd;
-      }
+      enum: ['free', 'basic', 'pro', 'enterprise'],
+      default: 'free'
     },
     expiresAt: Date,
     autoRenew: {
