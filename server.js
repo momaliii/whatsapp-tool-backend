@@ -13,13 +13,6 @@ const multer = require('multer');
 const fs = require('fs');
 const { google } = require('googleapis');
 
-// Import routes
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const subscriptionRoutes = require('./routes/subscriptionRoutes');
-const subscriptionPlanRoutes = require('./routes/subscriptionPlanRoutes');
-const packageRoutes = require('./routes/packageRoutes');
-
 const app = express();
 
 // Security middleware
@@ -65,18 +58,6 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(session(sessionConfig));
 
-// Create public directories if they don't exist
-const publicDirs = ['public', 'public/invoices', 'templates', 'templates/emails'];
-publicDirs.forEach(dir => {
-  const dirPath = path.join(__dirname, dir);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-});
-
-// Serve static files
-app.use('/public', express.static(path.join(__dirname, 'public')));
-
 // Admin session middleware
 function requireAdminSession(req, res, next) {
   if (req.session && req.session.isAdmin) {
@@ -103,13 +84,6 @@ app.post('/admin/login', express.json(), async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/subscription-plans', subscriptionPlanRoutes);
-app.use('/api/packages', packageRoutes);
 
 // --- AI Agent Settings & OpenAI Integration ---
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -396,109 +370,19 @@ app.get('/admin', requireAdminSession, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin-dashboard.html'));
 });
 
-// Test email configuration
-app.get('/api/test-email', async (req, res) => {
-  try {
-    const { sendEmail } = require('./utils/emailService');
-    console.log('SMTP Configuration:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      secure: true
-    });
-    
-    await sendEmail({
-      to: process.env.SMTP_USER,
-      subject: 'Test Email',
-      template: 'subscription-created',
-      data: {
-        name: 'Test User',
-        planName: 'Test Plan',
-        endDate: new Date().toLocaleDateString()
-      }
-    });
-    res.json({ message: 'Test email sent successfully' });
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({ 
-      error: 'Failed to send test email', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      smtpConfig: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secure: true
-      }
-    });
-  }
-});
-
-// Test all email templates
-app.get('/api/test-all-emails', async (req, res) => {
-  try {
-    const { 
-      sendSubscriptionCreated,
-      sendSubscriptionCancelled,
-      sendSubscriptionRenewed,
-      sendPaymentFailed,
-      sendSubscriptionExpiring
-    } = require('./utils/emailService');
-
-    const testUser = {
-      name: 'Test User',
-      email: process.env.SMTP_USER
-    };
-
-    const testSubscription = {
-      plan: {
-        name: 'Premium Plan'
-      },
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      cancellationReason: 'Testing email templates'
-    };
-
-    // Send all types of emails
-    const results = {
-      subscriptionCreated: await sendSubscriptionCreated(testUser, testSubscription),
-      subscriptionCancelled: await sendSubscriptionCancelled(testUser, testSubscription),
-      subscriptionRenewed: await sendSubscriptionRenewed(testUser, testSubscription),
-      paymentFailed: await sendPaymentFailed(testUser, testSubscription),
-      subscriptionExpiring: await sendSubscriptionExpiring(testUser, testSubscription)
-    };
-
-    res.json({ 
-      message: 'All test emails sent successfully',
-      results: {
-        subscriptionCreated: results.subscriptionCreated.messageId,
-        subscriptionCancelled: results.subscriptionCancelled.messageId,
-        subscriptionRenewed: results.subscriptionRenewed.messageId,
-        paymentFailed: results.paymentFailed.messageId,
-        subscriptionExpiring: results.subscriptionExpiring.messageId
-      }
-    });
-  } catch (error) {
-    console.error('Test emails error:', error);
-    res.status(500).json({ 
-      error: 'Failed to send test emails', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server error:', err);
   res.status(500).json({ 
-    error: 'Something went wrong!',
+    error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 
 // Step 1: Start OAuth flow

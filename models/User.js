@@ -1,41 +1,21 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
   email: {
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    lowercase: true
+    lowercase: true,
+    trim: true
   },
   password: {
     type: String,
     required: true
   },
-  role: {
+  name: {
     type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  lastLogin: {
-    type: Date
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    required: true,
+    trim: true
   },
   points: {
     type: Number,
@@ -61,6 +41,15 @@ const userSchema = new mongoose.Schema({
     validatedNumbers: { type: Number, default: 0 },
     lastReset: { type: Date, default: Date.now }
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  lastLogin: Date,
   whatsappAccounts: [
     {
       phoneNumber: String,
@@ -70,12 +59,6 @@ const userSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now }
     }
   ]
-});
-
-// Update the updatedAt timestamp before saving
-userSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
 });
 
 // Reset monthly usage
@@ -91,6 +74,4 @@ userSchema.methods.resetMonthlyUsage = function() {
   return false;
 };
 
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
