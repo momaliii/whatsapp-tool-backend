@@ -3,6 +3,8 @@ const User = require('../models/User');
 const LicenseKey = require('../models/LicenseKey');
 const Plan = require('../models/Plan');
 const { authenticate } = require('../middleware/auth');
+const PointsPackage = require('../models/PointsPackage');
+const { adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -173,13 +175,27 @@ router.post('/deduct', authenticate, async (req, res) => {
 
 // Get points packages (for purchase)
 router.get('/packages', async (req, res) => {
-  const packages = [
-    { id: 'pack_500', points: 500, price: 5, currency: 'USD' },
-    { id: 'pack_1000', points: 1000, price: 15, currency: 'USD', popular: true },
-    { id: 'pack_2500', points: 2500, price: 30, currency: 'USD' },
-    { id: 'pack_5000', points: 5000, price: 50, currency: 'USD' },
-  ];
+  const packages = await PointsPackage.find();
   res.json({ success: true, packages });
+});
+
+// Add package (admin only)
+router.post('/packages', adminAuth, async (req, res) => {
+  const pkg = new PointsPackage(req.body);
+  await pkg.save();
+  res.json({ success: true, package: pkg });
+});
+
+// Edit package (admin only)
+router.put('/packages/:id', adminAuth, async (req, res) => {
+  const pkg = await PointsPackage.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json({ success: true, package: pkg });
+});
+
+// Delete package (admin only)
+router.delete('/packages/:id', adminAuth, async (req, res) => {
+  await PointsPackage.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 });
 
 module.exports = router;
