@@ -22,9 +22,10 @@ router.post('/create-payment', async (req, res) => {
           email: userEmail,
         },
         provider_key: FAWATERAK_PROVIDER_KEY,
-        callback_url: 'https://whatsapp-tool-backend.onrender.com/api/payments/webhook',
+        callback_url:
+          'https://whatsapp-tool-backend.onrender.com/api/payments/webhook',
         metadata: { userId },
-        payment_method: method
+        payment_method: method,
       },
       {
         headers: {
@@ -40,13 +41,19 @@ router.post('/create-payment', async (req, res) => {
       status: 'pending',
       invoiceId: response.data.data.invoice_id,
       paymentUrl: response.data.data.url,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
-    res.json({ success: true, payment_url: response.data.data.url, invoice_id: response.data.data.invoice_id });
+    res.json({
+      success: true,
+      payment_url: response.data.data.url,
+      invoice_id: response.data.data.invoice_id,
+    });
   } catch (error) {
     console.error('Fawaterak error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, error: 'Failed to create payment link' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to create payment link' });
   }
 });
 
@@ -55,13 +62,20 @@ router.post('/webhook', async (req, res) => {
   const { status, metadata, amount_paid, invoice_id } = req.body;
 
   if (invoice_id) {
-    await Payment.findOneAndUpdate({ invoiceId: invoice_id }, { status, amountPaid: amount_paid, updatedAt: new Date() });
+    await Payment.findOneAndUpdate(
+      { invoiceId: invoice_id },
+      { status, amountPaid: amount_paid, updatedAt: new Date() }
+    );
   }
 
   if (status === 'paid' && metadata && metadata.userId) {
     try {
-      await User.findByIdAndUpdate(metadata.userId, { $inc: { points: amount_paid } });
-      console.log(`User ${metadata.userId} paid ${amount_paid} EGP. Credited points.`);
+      await User.findByIdAndUpdate(metadata.userId, {
+        $inc: { points: amount_paid },
+      });
+      console.log(
+        `User ${metadata.userId} paid ${amount_paid} EGP. Credited points.`
+      );
     } catch (err) {
       console.error('Error crediting user:', err);
     }
@@ -73,10 +87,14 @@ router.post('/webhook', async (req, res) => {
 // Get payment history for a user
 router.get('/history/:userId', async (req, res) => {
   try {
-    const payments = await Payment.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const payments = await Payment.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
     res.json({ success: true, payments });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Failed to fetch payment history' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to fetch payment history' });
   }
 });
 
@@ -84,11 +102,17 @@ router.get('/history/:userId', async (req, res) => {
 router.get('/packages', async (req, res) => {
   const packages = [
     { id: 'pack_500', points: 500, price: 5, currency: 'USD' },
-    { id: 'pack_1000', points: 1000, price: 15, currency: 'USD', popular: true },
+    {
+      id: 'pack_1000',
+      points: 1000,
+      price: 15,
+      currency: 'USD',
+      popular: true,
+    },
     { id: 'pack_2500', points: 2500, price: 30, currency: 'USD' },
     { id: 'pack_5000', points: 5000, price: 50, currency: 'USD' },
   ];
   res.json({ success: true, packages });
 });
 
-module.exports = router; 
+module.exports = router;

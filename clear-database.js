@@ -27,4 +27,4 @@ const clearDatabase = async () => {
   }
 };
 
-clearDatabase(); 
+clearDatabase();

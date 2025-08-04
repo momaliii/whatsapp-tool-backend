@@ -8,33 +8,39 @@ const LicenseKey = require('../models/LicenseKey');
 
 // Fawaterak API configuration
 const FAWATERAK_API_URL = 'https://app.fawaterk.com/api/v2';
-const FAWATERAK_API_TOKEN = 'af864762b794ddbdc62cda431e28318da9c907401dfcd6d27f';
+const FAWATERAK_API_TOKEN =
+  'af864762b794ddbdc62cda431e28318da9c907401dfcd6d27f';
 
 // Get available payment methods
 router.get('/methods', async (req, res) => {
   try {
     const response = await axios.get(`${FAWATERAK_API_URL}/getPaymentmethods`, {
       headers: {
-        'Authorization': `Bearer ${FAWATERAK_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${FAWATERAK_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
     });
     res.json(response.data);
   } catch (error) {
-    console.error('Error fetching payment methods:', error.response?.data || error.message, error.config, error.code);
-    res.status(500).json({ error: 'Failed to fetch payment methods', details: error.response?.data || error.message });
+    console.error(
+      'Error fetching payment methods:',
+      error.response?.data || error.message,
+      error.config,
+      error.code
+    );
+    res
+      .status(500)
+      .json({
+        error: 'Failed to fetch payment methods',
+        details: error.response?.data || error.message,
+      });
   }
 });
 
 // Initialize payment
 router.post('/initiate', authenticate, async (req, res) => {
   try {
-    const {
-      paymentMethodId,
-      amount,
-      points,
-      packageName
-    } = req.body;
+    const { paymentMethodId, amount, points, packageName } = req.body;
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -44,26 +50,26 @@ router.post('/initiate', authenticate, async (req, res) => {
     const paymentData = {
       payment_method_id: paymentMethodId,
       cartTotal: amount.toString(),
-      currency: "EGP",
+      currency: 'EGP',
       customer: {
         first_name: user.name.split(' ')[0] || 'User',
         last_name: user.name.split(' ').slice(1).join(' ') || 'Name',
         email: user.email || 'user@example.com',
         phone: user.phone || '01000000000',
-        address: 'N/A'
+        address: 'N/A',
       },
       redirectionUrls: {
         successUrl: `${process.env.FRONTEND_URL || 'https://whatsapp-tool-backend.onrender.com'}/payment/success`,
         failUrl: `${process.env.FRONTEND_URL || 'https://whatsapp-tool-backend.onrender.com'}/payment/fail`,
-        pendingUrl: `${process.env.FRONTEND_URL || 'https://whatsapp-tool-backend.onrender.com'}/payment/pending`
+        pendingUrl: `${process.env.FRONTEND_URL || 'https://whatsapp-tool-backend.onrender.com'}/payment/pending`,
       },
       cartItems: [
         {
           name: packageName,
           price: amount.toString(),
-          quantity: "1"
-        }
-      ]
+          quantity: '1',
+        },
+      ],
     };
 
     const response = await axios.post(
@@ -71,9 +77,9 @@ router.post('/initiate', authenticate, async (req, res) => {
       paymentData,
       {
         headers: {
-          'Authorization': `Bearer ${FAWATERAK_API_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${FAWATERAK_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
       }
     );
 
@@ -85,41 +91,50 @@ router.post('/initiate', authenticate, async (req, res) => {
       invoiceId: data.invoice_id,
       invoiceKey: data.invoice_key,
       amount: amount,
-      paymentMethod: paymentMethodId === 2 ? 'Visa-Mastercard' : 
-                    paymentMethodId === 3 ? 'Fawry' : 'Meeza',
+      paymentMethod:
+        paymentMethodId === 2
+          ? 'Visa-Mastercard'
+          : paymentMethodId === 3
+            ? 'Fawry'
+            : 'Meeza',
       points: points,
-      paymentData: data.payment_data
+      paymentData: data.payment_data,
     });
 
     await payment.save();
 
     // Return appropriate response based on payment method
-    if (paymentMethodId === 2) { // Visa/Mastercard
+    if (paymentMethodId === 2) {
+      // Visa/Mastercard
       return res.json({
         success: true,
         redirectUrl: data.payment_data.redirectTo,
-        paymentId: payment._id
+        paymentId: payment._id,
       });
-    } else if (paymentMethodId === 3) { // Fawry
+    } else if (paymentMethodId === 3) {
+      // Fawry
       return res.json({
         success: true,
         fawryCode: data.payment_data.fawryCode,
         expireDate: data.payment_data.expireDate,
-        paymentId: payment._id
+        paymentId: payment._id,
       });
-    } else if (paymentMethodId === 4) { // Meeza
+    } else if (paymentMethodId === 4) {
+      // Meeza
       return res.json({
         success: true,
         meezaReference: data.payment_data.meezaReference,
-        paymentId: payment._id
+        paymentId: payment._id,
       });
     }
-
   } catch (error) {
-    console.error('Payment initiation error:', error.response?.data || error.message);
+    console.error(
+      'Payment initiation error:',
+      error.response?.data || error.message
+    );
     res.status(500).json({
       success: false,
-      error: 'Failed to initiate payment'
+      error: 'Failed to initiate payment',
     });
   }
 });
@@ -141,26 +156,30 @@ router.get('/verify/:paymentId', authenticate, async (req, res) => {
       `${FAWATERAK_API_URL}/invoice/${payment.invoiceId}`,
       {
         headers: {
-          'Authorization': `Bearer ${FAWATERAK_API_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${FAWATERAK_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
       }
     );
 
     const { data } = response.data;
 
     // Update payment status
-    payment.status = data.status === 'paid' ? 'success' : 
-                    data.status === 'failed' ? 'failed' : 'pending';
-    
+    payment.status =
+      data.status === 'paid'
+        ? 'success'
+        : data.status === 'failed'
+          ? 'failed'
+          : 'pending';
+
     if (payment.status === 'success') {
       // Generate a license key
-      const key = `WA-${Math.random().toString(36).substr(2,4).toUpperCase()}-${Math.random().toString(36).substr(2,4).toUpperCase()}`;
+      const key = `WA-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       const licenseKey = new LicenseKey({
         key,
         points: payment.points,
         used: false,
-        createdBy: payment.userId
+        createdBy: payment.userId,
       });
       await licenseKey.save();
       // Return the key in the response
@@ -172,14 +191,16 @@ router.get('/verify/:paymentId', authenticate, async (req, res) => {
     res.json({
       success: true,
       status: payment.status,
-      points: payment.points
+      points: payment.points,
     });
-
   } catch (error) {
-    console.error('Payment verification error:', error.response?.data || error.message);
+    console.error(
+      'Payment verification error:',
+      error.response?.data || error.message
+    );
     res.status(500).json({
       success: false,
-      error: 'Failed to verify payment'
+      error: 'Failed to verify payment',
     });
   }
 });
@@ -194,9 +215,13 @@ router.post('/webhook', async (req, res) => {
       return res.status(404).json({ error: 'Payment not found' });
     }
 
-    payment.status = status === 'paid' ? 'success' : 
-                    status === 'failed' ? 'failed' : 'pending';
-    
+    payment.status =
+      status === 'paid'
+        ? 'success'
+        : status === 'failed'
+          ? 'failed'
+          : 'pending';
+
     if (payment.status === 'success') {
       // Add points to user
       const user = await User.findById(payment.userId);

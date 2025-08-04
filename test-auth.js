@@ -14,10 +14,13 @@ async function testAuth() {
     const signupData = {
       email: uniqueEmail,
       password: 'test123',
-      name: 'Test User'
+      name: 'Test User',
     };
 
-    const signupResponse = await axios.post(`${API_URL}/auth/signup`, signupData);
+    const signupResponse = await axios.post(
+      `${API_URL}/auth/signup`,
+      signupData
+    );
     console.log('User created:', signupResponse.data);
     const token = signupResponse.data.token;
     console.log('Token:', token);
@@ -27,7 +30,7 @@ async function testAuth() {
     console.log('2. Testing login');
     const loginData = {
       email: uniqueEmail,
-      password: 'test123'
+      password: 'test123',
     };
 
     const loginResponse = await axios.post(`${API_URL}/auth/login`, loginData);
@@ -38,9 +41,9 @@ async function testAuth() {
     console.log('3. Testing get current user');
     const meResponse = await axios.get(`${API_URL}/auth/me`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
     console.log('Current user:', meResponse.data);
     console.log('-----------------------------------\n');
@@ -60,4 +63,4 @@ testAuth().then(token => {
   } else {
     console.log('Auth test failed!');
   }
-}); 
+});

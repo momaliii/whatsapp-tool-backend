@@ -28,12 +28,12 @@ const setupInitialData = async () => {
           analyticsEnabled: false,
           prioritySupport: false,
           apiAccess: false,
-          customBranding: false
+          customBranding: false,
         },
         pricing: {
           monthly: 9.99,
           yearly: 99.99,
-          pointsIncluded: 100
+          pointsIncluded: 100,
         },
         pointCosts: {
           sendMessage: 0.5,
@@ -41,9 +41,9 @@ const setupInitialData = async () => {
           extractMember: 0.5,
           validateNumber: 0.2,
           extractChatNumbers: 0.5,
-          autoReply: 0.5
+          autoReply: 0.5,
         },
-        isActive: true
+        isActive: true,
       },
       {
         name: 'pro',
@@ -57,12 +57,12 @@ const setupInitialData = async () => {
           analyticsEnabled: true,
           prioritySupport: true,
           apiAccess: false,
-          customBranding: false
+          customBranding: false,
         },
         pricing: {
           monthly: 19.99,
           yearly: 199.99,
-          pointsIncluded: 500
+          pointsIncluded: 500,
         },
         pointCosts: {
           sendMessage: 0.4,
@@ -70,9 +70,9 @@ const setupInitialData = async () => {
           extractMember: 0.4,
           validateNumber: 0.15,
           extractChatNumbers: 0.4,
-          autoReply: 0.4
+          autoReply: 0.4,
         },
-        isActive: true
+        isActive: true,
       },
       {
         name: 'enterprise',
@@ -86,12 +86,12 @@ const setupInitialData = async () => {
           analyticsEnabled: true,
           prioritySupport: true,
           apiAccess: true,
-          customBranding: true
+          customBranding: true,
         },
         pricing: {
           monthly: 49.99,
           yearly: 499.99,
-          pointsIncluded: 2000
+          pointsIncluded: 2000,
         },
         pointCosts: {
           sendMessage: 0.3,
@@ -99,10 +99,10 @@ const setupInitialData = async () => {
           extractMember: 0.3,
           validateNumber: 0.1,
           extractChatNumbers: 0.3,
-          autoReply: 0.3
+          autoReply: 0.3,
         },
-        isActive: true
-      }
+        isActive: true,
+      },
     ];
 
     await Plan.insertMany(plans);
@@ -114,20 +114,20 @@ const setupInitialData = async () => {
         name: 'Starter Pack',
         points: 100,
         price: 4.99,
-        isActive: true
+        isActive: true,
       },
       {
         name: 'Business Pack',
         points: 500,
         price: 19.99,
-        isActive: true
+        isActive: true,
       },
       {
         name: 'Enterprise Pack',
         points: 2000,
         price: 69.99,
-        isActive: true
-      }
+        isActive: true,
+      },
     ];
 
     await PointsPackage.insertMany(pointsPackages);
@@ -136,8 +136,9 @@ const setupInitialData = async () => {
     // Create default AI agent settings
     const aiSettings = new AiAgentSettings({
       enabled: true,
-      prompt: 'You are a helpful WhatsApp assistant. Be professional and concise in your responses.',
-      googleSheets: []
+      prompt:
+        'You are a helpful WhatsApp assistant. Be professional and concise in your responses.',
+      googleSheets: [],
     });
 
     await aiSettings.save();
@@ -151,7 +152,7 @@ const setupInitialData = async () => {
         password: process.env.ADMIN_PASSWORD || 'admin123', // Make sure to change this
         name: 'Admin',
         role: 'admin',
-        isActive: true
+        isActive: true,
       });
       await adminUser.save();
       console.log('Admin user created');
@@ -165,4 +166,4 @@ const setupInitialData = async () => {
   }
 };
 
-setupInitialData(); 
+setupInitialData();

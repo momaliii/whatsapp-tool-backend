@@ -32,9 +32,11 @@ router.post('/switch', authenticate, async (req, res) => {
 router.post('/remove', authenticate, async (req, res) => {
   const { accountId } = req.body;
   const user = await User.findById(req.user._id);
-  user.whatsappAccounts = user.whatsappAccounts.filter(acc => acc._id.toString() !== accountId);
+  user.whatsappAccounts = user.whatsappAccounts.filter(
+    acc => acc._id.toString() !== accountId
+  );
   await user.save();
   res.json({ success: true, accounts: user.whatsappAccounts });
 });
 
-module.exports = router; 
+module.exports = router;
