@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Tool - Admin Dashboard</title>
+    <title>WTS Tools - Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -524,6 +524,14 @@
                     <i class="fas fa-gift"></i>
                     <span>Packages</span>
                 </a>
+                <a href="#" class="menu-item" data-page="plan-limits">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Plan Limits</span>
+                </a>
+                <a href="#" class="menu-item" data-page="user-plans">
+                    <i class="fas fa-user-edit"></i>
+                    <span>User Plans</span>
+                </a>
             </div>
         </nav>
 
@@ -891,6 +899,55 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Plan Limits Page -->
+                <div class="page" id="plan-limits-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Plan Features & Limits</h3>
+                            <p>Configure features and limits for each plan</p>
+                        </div>
+                        <div id="plan-limits-container">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Plans Page -->
+                <div class="page" id="user-plans-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">User Plan Management</h3>
+                            <div class="header-actions">
+                                <input type="text" id="user-search" placeholder="Search users..." class="form-control" style="width: 200px;">
+                                <button class="btn btn-primary btn-sm" onclick="searchUsers()">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table id="user-plans-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Email</th>
+                                        <th>Current Plan</th>
+                                        <th>Points</th>
+                                        <th>Expires</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="7" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="user-pagination"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -950,34 +1007,89 @@
     <!-- Add Package Modal -->
     <div class="modal" id="add-package-modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="closeModal('add-package-modal')">&times;</span>
-            <h3 id="package-modal-title">Add Package</h3>
+            <div class="modal-header">
+                <h3 id="package-modal-title">Add Package</h3>
+                <span class="modal-close" onclick="closeModal('add-package-modal')">&times;</span>
+            </div>
             <form id="package-form">
                 <input type="hidden" id="package-id">
                 <div class="form-group">
                     <label>Name</label>
-                    <input type="text" class="form-control" id="package-name" required>
+                    <input type="text" id="package-name" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Points</label>
-                    <input type="number" class="form-control" id="package-points" required>
+                    <input type="number" id="package-points" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Price</label>
-                    <input type="number" class="form-control" id="package-price" required step="0.01">
+                    <input type="number" step="0.01" id="package-price" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Currency</label>
-                    <input type="text" class="form-control" id="package-currency" value="USD" required>
+                    <select id="package-currency" class="form-control">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Custom Link</label>
-                    <input type="text" class="form-control" id="package-custom-link">
+                    <input type="url" id="package-custom-link" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label><input type="checkbox" id="package-popular"> Popular</label>
+                    <label>
+                        <input type="checkbox" id="package-popular"> Popular Package
+                    </label>
                 </div>
                 <button type="submit" class="btn btn-primary">Save Package</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Plan Edit Modal -->
+    <div class="modal" id="user-plan-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit User Plan</h3>
+                <span class="modal-close" onclick="closeModal('user-plan-modal')">&times;</span>
+            </div>
+            <form id="user-plan-form">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label>User</label>
+                    <input type="text" id="edit-user-name" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="edit-user-email" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Plan</label>
+                    <select id="edit-user-plan" class="form-control" required>
+                        <option value="free">Free</option>
+                        <option value="basic">Basic</option>
+                        <option value="pro">Pro</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Points</label>
+                    <input type="number" id="edit-user-points" class="form-control" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Expires At</label>
+                    <input type="datetime-local" id="edit-user-expires" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-user-auto-renew"> Auto Renew
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('user-plan-modal')">Cancel</button>
+                </div>
             </form>
         </div>
     </div>
@@ -1053,7 +1165,9 @@
                 costs: 'Tool Costs',
                 settings: 'Settings',
                 waAccounts: 'WhatsApp Accounts',
-                packages: 'Packages'
+                packages: 'Packages',
+                'plan-limits': 'Plan Limits',
+                'user-plans': 'User Plans'
             };
             document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
 
@@ -1092,6 +1206,12 @@
                     break;
                 case 'packages':
                     await loadPackages();
+                    break;
+                case 'plan-limits':
+                    await loadPlanLimits();
+                    break;
+                case 'user-plans':
+                    await loadUserPlans();
                     break;
             }
         }
@@ -1766,6 +1886,301 @@
                 showNotification('Error deleting package', 'error');
             }
         }
+
+        async function loadPlanLimits() {
+            try {
+                const data = await apiCall('/admin/plans');
+                const container = document.getElementById('plan-limits-container');
+                container.innerHTML = '';
+                
+                data.plans.forEach(plan => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3 class="card-title">${plan.displayName} <small>(${plan.name})</small></h3>
+                        </div>
+                        <form class="plan-limits-form" data-plan="${plan.name}">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Messages Per Day</label>
+                                    <input type="number" name="messagesPerDay" value="${plan.features.messagesPerDay || 0}" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Messages Per Month</label>
+                                    <input type="number" name="messagesPerMonth" value="${plan.features.messagesPerMonth || 0}" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Groups Per Day</label>
+                                    <input type="number" name="groupsPerDay" value="${plan.features.groupsPerDay || 0}" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Contacts Limit</label>
+                                    <input type="number" name="contactsLimit" value="${plan.features.contactsLimit || 0}" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" name="autoReplyEnabled" ${plan.features.autoReplyEnabled ? 'checked' : ''}> Auto Reply Enabled
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" name="analyticsEnabled" ${plan.features.analyticsEnabled ? 'checked' : ''}> Analytics Enabled
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" name="prioritySupport" ${plan.features.prioritySupport ? 'checked' : ''}> Priority Support
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" name="apiAccess" ${plan.features.apiAccess ? 'checked' : ''}> API Access
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" name="customBranding" ${plan.features.customBranding ? 'checked' : ''}> Custom Branding
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Monthly Price ($)</label>
+                                    <input type="number" step="0.01" name="monthly" value="${plan.pricing.monthly || 0}" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Yearly Price ($)</label>
+                                    <input type="number" step="0.01" name="yearly" value="${plan.pricing.yearly || 0}" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Points Included</label>
+                                    <input type="number" name="pointsIncluded" value="${plan.pricing.pointsIncluded || 0}" class="form-control">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <span class="save-status" style="margin-left: 15px;"></span>
+                        </form>
+                    `;
+                    container.appendChild(card);
+                    
+                    // Add form submit handler
+                    card.querySelector('form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        await updatePlanLimits(e.target);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading plan limits:', error);
+                showNotification('Error loading plan limits', 'error');
+            }
+        }
+
+        async function updatePlanLimits(form) {
+            try {
+                const planName = form.getAttribute('data-plan');
+                const formData = new FormData(form);
+                
+                const features = {
+                    messagesPerDay: parseInt(formData.get('messagesPerDay')) || 0,
+                    messagesPerMonth: parseInt(formData.get('messagesPerMonth')) || 0,
+                    groupsPerDay: parseInt(formData.get('groupsPerDay')) || 0,
+                    contactsLimit: parseInt(formData.get('contactsLimit')) || 0,
+                    autoReplyEnabled: formData.get('autoReplyEnabled') === 'on',
+                    analyticsEnabled: formData.get('analyticsEnabled') === 'on',
+                    prioritySupport: formData.get('prioritySupport') === 'on',
+                    apiAccess: formData.get('apiAccess') === 'on',
+                    customBranding: formData.get('customBranding') === 'on'
+                };
+                
+                const pricing = {
+                    monthly: parseFloat(formData.get('monthly')) || 0,
+                    yearly: parseFloat(formData.get('yearly')) || 0,
+                    pointsIncluded: parseInt(formData.get('pointsIncluded')) || 0
+                };
+                
+                // Update features
+                await apiCall(`/admin/plans/${planName}/features`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ features })
+                });
+                
+                // Update pricing
+                await apiCall(`/admin/plans/${planName}/pricing`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ pricing })
+                });
+                
+                const statusSpan = form.querySelector('.save-status');
+                statusSpan.textContent = 'Saved!';
+                statusSpan.style.color = 'green';
+                setTimeout(() => {
+                    statusSpan.textContent = '';
+                }, 2000);
+                
+                showNotification('Plan limits updated successfully!', 'success');
+            } catch (error) {
+                console.error('Error updating plan limits:', error);
+                showNotification('Error updating plan limits', 'error');
+            }
+        }
+
+        // User Plans Management
+        let currentUserPage = 1;
+        let currentUserSearch = '';
+
+        async function loadUserPlans() {
+            try {
+                const data = await apiCall(`/admin/users?page=${currentUserPage}&search=${currentUserSearch}`);
+                renderUserPlans(data.users || []);
+                renderUserPagination(data.pagination);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showNotification('Error loading users', 'error');
+            }
+        }
+
+        function renderUserPlans(users) {
+            const tbody = document.querySelector('#user-plans-table tbody');
+            tbody.innerHTML = '';
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No users found</td></tr>';
+                return;
+            }
+            
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                const expiresDate = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt).toLocaleDateString() : 'Never';
+                const status = user.isActive ? 'Active' : 'Inactive';
+                const statusClass = user.isActive ? 'success' : 'danger';
+                
+                tr.innerHTML = `
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td><span class="badge badge-info">${user.subscription?.plan || 'Free'}</span></td>
+                    <td>${user.points}</td>
+                    <td>${expiresDate}</td>
+                    <td><span class="badge badge-${statusClass}">${status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editUserPlan('${user._id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderUserPagination(pagination) {
+            const container = document.getElementById('user-pagination');
+            if (!pagination || pagination.pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '<div class="pagination-controls">';
+            if (pagination.page > 1) {
+                html += `<button class="btn btn-sm" onclick="changeUserPage(${pagination.page - 1})">Previous</button>`;
+            }
+            html += `<span>Page ${pagination.page} of ${pagination.pages}</span>`;
+            if (pagination.page < pagination.pages) {
+                html += `<button class="btn btn-sm" onclick="changeUserPage(${pagination.page + 1})">Next</button>`;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function changeUserPage(page) {
+            currentUserPage = page;
+            loadUserPlans();
+        }
+
+        function searchUsers() {
+            currentUserSearch = document.getElementById('user-search').value;
+            currentUserPage = 1;
+            loadUserPlans();
+        }
+
+        async function editUserPlan(userId) {
+            try {
+                const data = await apiCall(`/admin/users/${userId}`);
+                const user = data.user;
+                
+                document.getElementById('edit-user-id').value = user._id;
+                document.getElementById('edit-user-name').value = user.name;
+                document.getElementById('edit-user-email').value = user.email;
+                document.getElementById('edit-user-plan').value = user.subscription?.plan || 'free';
+                document.getElementById('edit-user-points').value = user.points;
+                
+                if (user.subscription?.expiresAt) {
+                    const expiresDate = new Date(user.subscription.expiresAt);
+                    document.getElementById('edit-user-expires').value = expiresDate.toISOString().slice(0, 16);
+                } else {
+                    document.getElementById('edit-user-expires').value = '';
+                }
+                
+                document.getElementById('edit-user-auto-renew').checked = user.subscription?.autoRenew || false;
+                
+                document.getElementById('user-plan-modal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading user details:', error);
+                showNotification('Error loading user details', 'error');
+            }
+        }
+
+        async function saveUserPlan(e) {
+            e.preventDefault();
+            
+            try {
+                const userId = document.getElementById('edit-user-id').value;
+                const plan = document.getElementById('edit-user-plan').value;
+                const points = parseInt(document.getElementById('edit-user-points').value);
+                const expiresAt = document.getElementById('edit-user-expires').value;
+                const autoRenew = document.getElementById('edit-user-auto-renew').checked;
+                
+                // Update plan
+                await apiCall(`/admin/users/${userId}/plan`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        plan,
+                        expiresAt: expiresAt || null,
+                        autoRenew
+                    })
+                });
+                
+                // Update points
+                await apiCall(`/admin/users/${userId}/points`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ points })
+                });
+                
+                closeModal('user-plan-modal');
+                showNotification('User plan updated successfully!', 'success');
+                await loadUserPlans();
+            } catch (error) {
+                console.error('Error updating user plan:', error);
+                showNotification('Error updating user plan', 'error');
+            }
+        }
+
+        // Add event listener for user plan form
+        document.addEventListener('DOMContentLoaded', function() {
+            const userPlanForm = document.getElementById('user-plan-form');
+            if (userPlanForm) {
+                userPlanForm.addEventListener('submit', saveUserPlan);
+            }
+        });
     </script>
 </body>
 </html>

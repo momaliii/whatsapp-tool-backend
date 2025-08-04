@@ -403,4 +403,154 @@ router.get('/plans', adminAuth, async (req, res) => {
   }
 });
 
+// Update plan features and limits
+router.put('/plans/:planName/features', adminAuth, async (req, res) => {
+  try {
+    const { planName } = req.params;
+    const { features } = req.body;
+    if (!features || typeof features !== 'object') {
+      return res.status(400).json({ error: 'features object is required' });
+    }
+    const plan = await Plan.findOne({ name: planName });
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    plan.features = { ...plan.features, ...features };
+    await plan.save();
+    res.json({ success: true, message: 'Plan features updated', plan });
+  } catch (error) {
+    console.error('Error updating plan features:', error);
+    res.status(500).json({ error: 'Error updating plan features' });
+  }
+});
+
+// Update plan pricing
+router.put('/plans/:planName/pricing', adminAuth, async (req, res) => {
+  try {
+    const { planName } = req.params;
+    const { pricing } = req.body;
+    if (!pricing || typeof pricing !== 'object') {
+      return res.status(400).json({ error: 'pricing object is required' });
+    }
+    const plan = await Plan.findOne({ name: planName });
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    plan.pricing = { ...plan.pricing, ...pricing };
+    await plan.save();
+    res.json({ success: true, message: 'Plan pricing updated', plan });
+  } catch (error) {
+    console.error('Error updating plan pricing:', error);
+    res.status(500).json({ error: 'Error updating plan pricing' });
+  }
+});
+
+// Get user with plan details
+router.get('/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Error fetching user' });
+  }
+});
+
+// Update user's plan
+router.put('/users/:userId/plan', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { plan, expiresAt, autoRenew } = req.body;
+    
+    if (!plan || !['free', 'basic', 'pro', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    user.subscription.plan = plan;
+    if (expiresAt) {
+      user.subscription.expiresAt = new Date(expiresAt);
+    }
+    if (autoRenew !== undefined) {
+      user.subscription.autoRenew = autoRenew;
+    }
+    
+    await user.save();
+    res.json({ success: true, message: 'User plan updated', user });
+  } catch (error) {
+    console.error('Error updating user plan:', error);
+    res.status(500).json({ error: 'Error updating user plan' });
+  }
+});
+
+// Update user's points
+router.put('/users/:userId/points', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { points } = req.body;
+    
+    if (typeof points !== 'number' || points < 0) {
+      return res.status(400).json({ error: 'Invalid points value' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    user.points = points;
+    await user.save();
+    res.json({ success: true, message: 'User points updated', user });
+  } catch (error) {
+    console.error('Error updating user points:', error);
+    res.status(500).json({ error: 'Error updating user points' });
+  }
+});
+
+// Get all users with plan info
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let query = {};
+    if (search) {
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const users = await User.find(query)
+      .select('email name points subscription.plan subscription.expiresAt subscription.autoRenew isActive createdAt lastLogin')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await User.countDocuments(query);
+    
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Error fetching users' });
+  }
+});
+
 module.exports = router;

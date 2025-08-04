@@ -1,7 +1,7 @@
 <<<<<<< HEAD
-# WhatsApp Tool Backend
+# WTS Tools Backend
 
-This is the backend server for the WhatsApp Tool with Admin Dashboard.
+This is the backend server for the WTS Tools with Admin Dashboard.
 
 ## Features
 - User authentication (signup/login)
