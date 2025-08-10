@@ -4,11 +4,11 @@ const planSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   displayName: {
     type: String,
-    required: true
+    required: true,
   },
   features: {
     messagesPerDay: Number,
@@ -19,12 +19,12 @@ const planSchema = new mongoose.Schema({
     analyticsEnabled: Boolean,
     prioritySupport: Boolean,
     apiAccess: Boolean,
-    customBranding: Boolean
+    customBranding: Boolean,
   },
   pricing: {
     monthly: Number,
     yearly: Number,
-    pointsIncluded: Number
+    pointsIncluded: Number,
   },
   pointCosts: {
     sendMessage: { type: Number, default: 0.5 },
@@ -32,12 +32,12 @@ const planSchema = new mongoose.Schema({
     extractMember: { type: Number, default: 0.5 },
     validateNumber: { type: Number, default: 0.2 },
     extractChatNumbers: { type: Number, default: 0.5 },
-    autoReply: { type: Number, default: 0.5 }
+    autoReply: { type: Number, default: 0.5 },
   },
   isActive: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 });
 
 module.exports = mongoose.model('Plan', planSchema);

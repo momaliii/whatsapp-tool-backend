@@ -4,56 +4,56 @@ const paymentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
   },
   invoiceId: {
     type: String,
-    required: true
+    required: true,
   },
   invoiceKey: {
     type: String,
-    required: true
+    required: true,
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
   },
   currency: {
     type: String,
-    default: 'EGP'
+    default: 'EGP',
   },
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['Visa-Mastercard', 'Fawry', 'Meeza']
+    enum: ['Visa-Mastercard', 'Fawry', 'Meeza'],
   },
   status: {
     type: String,
     required: true,
     enum: ['pending', 'success', 'failed'],
-    default: 'pending'
+    default: 'pending',
   },
   points: {
     type: Number,
-    required: true
+    required: true,
   },
   paymentData: {
-    type: Object
+    type: Object,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Update the updatedAt timestamp before saving
-paymentSchema.pre('save', function(next) {
+paymentSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('Payment', paymentSchema); 
+module.exports = mongoose.model('Payment', paymentSchema);

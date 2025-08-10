@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const OpenAI = require('openai');
 const AiAgentSettings = require('./models/AiAgentSettings');
+const Conversation = require('./models/Conversation');
 const multer = require('multer');
 const fs = require('fs');
 const { google } = require('googleapis');
@@ -231,7 +232,7 @@ app.delete('/api/ai-agent-sheets/:index', async (req, res) => {
 
 // Update the AI reply endpoint to include sheet data
 app.post('/api/ai-agent-reply', async (req, res) => {
-  const { message } = req.body;
+  const { message, senderId } = req.body;
   try {
     const settings = await AiAgentSettings.findOne();
     if (!settings || !settings.enabled || !settings.prompt) {
@@ -272,20 +273,60 @@ app.post('/api/ai-agent-reply', async (req, res) => {
       knowledgeText = knowledgeText.slice(0, 12000) + '\n... (truncated)';
     }
 
-    // Compose the system prompt
+    // Compose the system prompt and conversation history
     let systemPrompt = settings.prompt;
     if (knowledgeText) {
       systemPrompt += '\n\nKnowledge Base:\n' + knowledgeText;
     }
 
+    // Fetch last conversation if senderId provided
+    let historyMessages = [];
+    if (senderId) {
+      const convo = await Conversation.findOne({ contactId: senderId });
+      if (convo && Array.isArray(convo.messages)) {
+        // Limit history tokens roughly by capping messages count/length
+        const MAX_HISTORY_CHARS = 8000;
+        let total = 0;
+        for (let i = convo.messages.length - 1; i >= 0; i--) {
+          const m = convo.messages[i];
+          const length = (m.content || '').length;
+          if (total + length > MAX_HISTORY_CHARS) break;
+          historyMessages.unshift({ role: m.role, content: m.content });
+          total += length;
+        }
+      }
+    }
+
+    const messagesPayload = [
+      { role: 'system', content: systemPrompt },
+      ...historyMessages,
+      { role: 'user', content: message }
+    ];
+
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ]
+      messages: messagesPayload
     });
     const aiReply = response.choices[0].message.content;
+
+    // Persist conversation if senderId present
+    if (senderId) {
+      await Conversation.findOneAndUpdate(
+        { contactId: senderId },
+        {
+          $push: {
+            messages: {
+              $each: [
+                { role: 'user', content: message },
+                { role: 'assistant', content: aiReply }
+              ]
+            }
+          }
+        },
+        { upsert: true, new: true }
+      );
+    }
+
     res.json({ reply: aiReply });
   } catch (err) {
     console.error('AI Agent error:', err);
