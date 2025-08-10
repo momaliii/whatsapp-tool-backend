@@ -334,6 +334,25 @@ app.post('/api/ai-agent-reply', async (req, res) => {
   }
 });
 
+// Conversation utilities: fetch and clear by contact
+app.get('/api/conversations/:contactId', async (req, res) => {
+  try {
+    const convo = await Conversation.findOne({ contactId: req.params.contactId });
+    res.json({ conversation: convo || { contactId: req.params.contactId, messages: [] } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load conversation.' });
+  }
+});
+
+app.delete('/api/conversations/:contactId', async (req, res) => {
+  try {
+    await Conversation.deleteOne({ contactId: req.params.contactId });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clear conversation.' });
+  }
+});
+
 // Upload endpoint for AI Agent knowledge files
 app.post('/api/ai-agent-knowledge-upload', async (req, res) => {
   try {
