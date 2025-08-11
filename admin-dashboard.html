@@ -524,6 +524,10 @@
                     <i class="fas fa-gift"></i>
                     <span>Packages</span>
                 </a>
+                <a href="#" class="menu-item" data-page="tutorials">
+                    <i class="fas fa-video"></i>
+                    <span>Tutorials</span>
+                </a>
                 <a href="#" class="menu-item" data-page="plan-limits">
                     <i class="fas fa-sliders-h"></i>
                     <span>Plan Limits</span>
@@ -900,6 +904,33 @@
                     </div>
                 </div>
 
+                <!-- Tutorials Page -->
+                <div class="page" id="tutorials-page">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Manage Tutorial Videos</h3>
+                            <button class="btn btn-success" onclick="openTutorialModal()"><i class="fas fa-plus"></i> Add Tutorial</button>
+                        </div>
+                        <div class="table-container">
+                            <table id="tutorials-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>URL</th>
+                                        <th>Order</th>
+                                        <th>Published</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Plan Limits Page -->
                 <div class="page" id="plan-limits-page">
                     <div class="card">
@@ -1047,6 +1078,51 @@
         </div>
     </div>
 
+    <!-- Add/Edit Tutorial Modal -->
+    <div class="modal" id="tutorial-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tutorial-modal-title">Add Tutorial</h3>
+                <span class="modal-close" onclick="closeModal('tutorial-modal')">&times;</span>
+            </div>
+            <form id="tutorial-form">
+                <input type="hidden" id="tutorial-id">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="tutorial-title" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="tutorial-description" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Video URL (YouTube/Vimeo/direct)</label>
+                    <input type="url" id="tutorial-url" class="form-control" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="tutorial-category" class="form-control" placeholder="general">
+                    </div>
+                    <div class="form-group">
+                        <label>Order</label>
+                        <input type="number" id="tutorial-order" class="form-control" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Thumbnail URL (optional)</label>
+                    <input type="url" id="tutorial-thumbnail" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="tutorial-published" checked> Published
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Tutorial</button>
+            </form>
+        </div>
+    </div>
+
     <!-- User Plan Edit Modal -->
     <div class="modal" id="user-plan-modal">
         <div class="modal-content">
@@ -1106,6 +1182,7 @@
         let keys = [];
         let operationsChart = null;
         let packages = [];
+        let tutorials = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1167,7 +1244,8 @@
                 waAccounts: 'WhatsApp Accounts',
                 packages: 'Packages',
                 'plan-limits': 'Plan Limits',
-                'user-plans': 'User Plans'
+                'user-plans': 'User Plans',
+                tutorials: 'Tutorials'
             };
             document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
 
@@ -1212,6 +1290,9 @@
                     break;
                 case 'user-plans':
                     await loadUserPlans();
+                    break;
+                case 'tutorials':
+                    await loadTutorials();
                     break;
             }
         }
@@ -1576,6 +1657,115 @@
                 statusDiv.textContent = 'Error adding account';
             }
         };
+
+        // Tutorials
+        async function loadTutorials() {
+            try {
+                const data = await apiCall('/tutorials/admin');
+                tutorials = data.videos || [];
+                renderTutorials();
+            } catch (error) {
+                showNotification('Error loading tutorials', 'error');
+            }
+        }
+
+        function renderTutorials() {
+            const tbody = document.querySelector('#tutorials-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!tutorials.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No tutorials found</td></tr>';
+                return;
+            }
+            tutorials.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${v.title}</td>
+                    <td>${v.category || '-'}</td>
+                    <td><a href="${v.url}" target="_blank">Open</a></td>
+                    <td>${v.order ?? 0}</td>
+                    <td>${v.isPublished ? 'Yes' : 'No'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editTutorial('${v._id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTutorial('${v._id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openTutorialModal() {
+            document.getElementById('tutorial-modal-title').textContent = 'Add Tutorial';
+            document.getElementById('tutorial-id').value = '';
+            document.getElementById('tutorial-title').value = '';
+            document.getElementById('tutorial-description').value = '';
+            document.getElementById('tutorial-url').value = '';
+            document.getElementById('tutorial-category').value = '';
+            document.getElementById('tutorial-order').value = 0;
+            document.getElementById('tutorial-thumbnail').value = '';
+            document.getElementById('tutorial-published').checked = true;
+            document.getElementById('tutorial-modal').classList.add('active');
+        }
+
+        function editTutorial(id) {
+            const v = tutorials.find(t => t._id === id);
+            if (!v) return;
+            document.getElementById('tutorial-modal-title').textContent = 'Edit Tutorial';
+            document.getElementById('tutorial-id').value = v._id;
+            document.getElementById('tutorial-title').value = v.title || '';
+            document.getElementById('tutorial-description').value = v.description || '';
+            document.getElementById('tutorial-url').value = v.url || '';
+            document.getElementById('tutorial-category').value = v.category || '';
+            document.getElementById('tutorial-order').value = v.order ?? 0;
+            document.getElementById('tutorial-thumbnail').value = v.thumbnailUrl || '';
+            document.getElementById('tutorial-published').checked = !!v.isPublished;
+            document.getElementById('tutorial-modal').classList.add('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const tutorialForm = document.getElementById('tutorial-form');
+            if (tutorialForm) {
+                tutorialForm.addEventListener('submit', saveTutorial);
+            }
+        });
+
+        async function saveTutorial(e) {
+            e.preventDefault();
+            const id = document.getElementById('tutorial-id').value;
+            const payload = {
+                title: document.getElementById('tutorial-title').value,
+                description: document.getElementById('tutorial-description').value,
+                url: document.getElementById('tutorial-url').value,
+                category: document.getElementById('tutorial-category').value || 'general',
+                order: parseInt(document.getElementById('tutorial-order').value) || 0,
+                thumbnailUrl: document.getElementById('tutorial-thumbnail').value,
+                isPublished: document.getElementById('tutorial-published').checked
+            };
+            try {
+                if (id) {
+                    await apiCall(`/tutorials/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showNotification('Tutorial updated', 'success');
+                } else {
+                    await apiCall('/tutorials', { method: 'POST', body: JSON.stringify(payload) });
+                    showNotification('Tutorial added', 'success');
+                }
+                closeModal('tutorial-modal');
+                await loadTutorials();
+            } catch (error) {
+                showNotification('Error saving tutorial', 'error');
+            }
+        }
+
+        async function deleteTutorial(id) {
+            if (!confirm('Delete this tutorial?')) return;
+            try {
+                await apiCall(`/tutorials/${id}`, { method: 'DELETE' });
+                showNotification('Tutorial deleted', 'success');
+                await loadTutorials();
+            } catch (error) {
+                showNotification('Error deleting tutorial', 'error');
+            }
+        }
 
         // Action Functions
         async function generateKeys(e) {

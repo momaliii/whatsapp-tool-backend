@@ -232,7 +232,7 @@ app.delete('/api/ai-agent-sheets/:index', async (req, res) => {
 
 // Update the AI reply endpoint to include sheet data
 app.post('/api/ai-agent-reply', async (req, res) => {
-  const { message, senderId } = req.body;
+  const { message, senderId, history } = req.body;
   try {
     const settings = await AiAgentSettings.findOne();
     if (!settings || !settings.enabled || !settings.prompt) {
@@ -279,13 +279,12 @@ app.post('/api/ai-agent-reply', async (req, res) => {
       systemPrompt += '\n\nKnowledge Base:\n' + knowledgeText;
     }
 
-    // Fetch last conversation if senderId provided
+    // Fetch last conversation if senderId provided (server-side memory)
     let historyMessages = [];
     if (senderId) {
       const convo = await Conversation.findOne({ contactId: senderId });
       if (convo && Array.isArray(convo.messages)) {
-        // Limit history tokens roughly by capping messages count/length
-        const MAX_HISTORY_CHARS = 8000;
+        const MAX_HISTORY_CHARS = 6000;
         let total = 0;
         for (let i = convo.messages.length - 1; i >= 0; i--) {
           const m = convo.messages[i];
@@ -295,6 +294,26 @@ app.post('/api/ai-agent-reply', async (req, res) => {
           total += length;
         }
       }
+    }
+
+    // Merge optional client-provided recent WhatsApp history (to cover offline gaps)
+    if (Array.isArray(history) && history.length > 0) {
+      const sanitized = history
+        .filter(h => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
+        .map(h => ({ role: h.role, content: h.content }));
+      // Append, then cap
+      historyMessages = [...historyMessages, ...sanitized];
+      const MAX_TOTAL_CHARS = 9000;
+      let total = 0;
+      const trimmed = [];
+      for (let i = historyMessages.length - 1; i >= 0; i--) {
+        const m = historyMessages[i];
+        const length = (m.content || '').length;
+        if (total + length > MAX_TOTAL_CHARS) break;
+        trimmed.unshift(m);
+        total += length;
+      }
+      historyMessages = trimmed;
     }
 
     const messagesPayload = [
@@ -415,6 +434,7 @@ app.use('/api/points', require('./routes/points'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/wa-accounts', require('./routes/wa-accounts'));
 app.use('/api/payment', require('./routes/payment-routes'));
+app.use('/api/tutorials', require('./routes/tutorials'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
