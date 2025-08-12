@@ -323,8 +323,10 @@ app.post('/api/ai-agent-reply', async (req, res) => {
     ];
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: messagesPayload
+      model: 'gpt-4o-mini',
+      messages: messagesPayload,
+      max_tokens: 150,
+      temperature: 0.3
     });
     const aiReply = response.choices[0].message.content;
 
